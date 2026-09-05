@@ -24,6 +24,7 @@ exports.run = async ({ app, window, resultDir }) => {
     await waitFor('sessions.size === 1');
     await waitFor("bufferLines(sessions.get(activeId),100).join('\\n').includes('PS ')");
     assert.equal(await js('typeof window.require'), 'undefined');
+    assert.match(await js('getComputedStyle(document.body).fontFamily'), /^Inter/);
     fs.writeFileSync(
       path.join(resultDir, 'triangle-startup.png'),
       (await window.webContents.capturePage()).toPNG(),
@@ -82,11 +83,44 @@ exports.run = async ({ app, window, resultDir }) => {
       path.join(resultDir, 'triangle-settings.png'),
       (await window.webContents.capturePage()).toPNG(),
     );
+    assert.equal(await js("document.querySelectorAll('[data-theme-choice]').length"), 5);
+    assert.equal(
+      await js("getComputedStyle(document.body).getPropertyValue('--accent').trim()"),
+      '#72e7ef',
+    );
+    await js("$('settings-form').elements.theme.value='vercel'; previewSettings()");
+    assert.equal(await js('document.body.dataset.theme'), 'vercel');
+    assert.equal(
+      await js("getComputedStyle(document.body).getPropertyValue('--accent').trim()"),
+      '#ededed',
+    );
+    await js("$('settings-form').elements.theme.value='blueprint'; previewSettings()");
     await js("settings.readerVisible=false; $('settings-form').requestSubmit()");
     await waitFor(
-      "!$('settings-dialog').open && settings.fontSize===18 && settings.theme==='blueprint' && settings.backgroundEffects.blur===26 && settings.backgroundEffects.opacity===72 && settings.backgroundEffects.noiseAmount===9 && settings.backgroundEffects.noiseScale===1.8",
+      "!$('settings-dialog').open && settings.fontSize===18 && settings.theme==='blueprint' && settings.accent==='#72e7ef' && settings.backgroundEffects.blur===26 && settings.backgroundEffects.opacity===72 && settings.backgroundEffects.noiseAmount===9 && settings.backgroundEffects.noiseScale===1.8",
     );
     assert.equal(await js('triangle.bootstrap().then(value=>value.settings.fontSize)'), 18);
+    await js("settings.theme='vercel'; settings.accent='#ededed'; applySettings()");
+    await new Promise((r) => setTimeout(r, 200));
+    fs.writeFileSync(
+      path.join(resultDir, 'triangle-vercel.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    await js("settings.theme='blueprint'; settings.accent='#72e7ef'; applySettings()");
+    await js('setFocusMode(true)');
+    await new Promise((r) => setTimeout(r, 200));
+    fs.writeFileSync(
+      path.join(resultDir, 'triangle-focus.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    assert.equal(
+      await js(
+        "document.body.dataset.focus==='true' && getComputedStyle(document.querySelector('.sidebar')).display==='none' && getComputedStyle(document.querySelector('.terminal-card')).borderRadius==='0px'",
+      ),
+      true,
+    );
+    await js('setFocusMode(false)');
+    assert.equal(await js('document.body.dataset.focus'), 'false');
     await js(
       "settings.fontSize=15; settings.readerVisible=true; applySettings(); activate(sessions.keys().next().value); $('toast').hidden=true",
     );
@@ -137,6 +171,7 @@ exports.run = async ({ app, window, resultDir }) => {
             'staged Codex shortcut',
             'settings persistence',
             'theme preview and background material controls',
+            'focus terminal mode',
             'compact layout',
             'session cleanup',
             'renderer isolation',
@@ -147,6 +182,8 @@ exports.run = async ({ app, window, resultDir }) => {
             'triangle-persian.png',
             'triangle-compact.png',
             'triangle-settings.png',
+            'triangle-vercel.png',
+            'triangle-focus.png',
           ],
         },
         null,

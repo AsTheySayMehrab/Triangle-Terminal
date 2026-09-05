@@ -9,9 +9,13 @@
     />
     <title>Triangle Terminal</title>
     <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/400.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/500.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/600.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/700.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body data-theme="midnight" data-material="on">
+  <body data-theme="midnight" data-material="on" data-focus="false">
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand" aria-label="Triangle Terminal">
@@ -87,6 +91,16 @@
             <p id="header-path" class="header-path" dir="auto"></p>
           </div>
           <div class="top-actions">
+            <button
+              id="focus-mode"
+              class="focus-toggle"
+              type="button"
+              data-i18n="focusMode"
+              title="Focus terminal (Ctrl+Shift+M)"
+              aria-pressed="false"
+            >
+              Focus terminal
+            </button>
             <button id="language-button" type="button">EN / فارسی</button>
             <span class="clock" id="clock">00:00:00</span>
           </div>
@@ -140,6 +154,15 @@
                 data-i18n="export"
               >
                 Export
+              </button>
+              <button
+                id="focus-exit"
+                class="secondary-button focus-exit"
+                type="button"
+                data-i18n="exitFocus"
+                hidden
+              >
+                Exit focus
               </button>
             </div>
           </div>
@@ -304,6 +327,21 @@
               <span
                 ><strong data-i18n="themeLight">Paper</strong
                 ><small data-i18n="themeLightNote">Warm light, high contrast</small></span
+              >
+            </button>
+            <button
+              class="theme-option"
+              type="button"
+              data-theme-choice="vercel"
+              role="radio"
+              aria-pressed="false"
+            >
+              <span class="theme-swatch theme-swatch-vercel" aria-hidden="true"
+                ><i></i><b></b><em></em
+              ></span>
+              <span
+                ><strong data-i18n="themeVercel">Vercel</strong
+                ><small data-i18n="themeVercelNote">Black, white, no distraction</small></span
               >
             </button>
           </div>

@@ -31,6 +31,7 @@ test('background material settings are bounded and theme choices are preserved',
     },
   });
   assert.equal(result.theme, 'blueprint');
+  assert.equal(validateSettings({ theme: 'vercel' }).theme, 'vercel');
   assert.deepEqual(result.backgroundEffects, {
     enabled: false,
     blur: 40,

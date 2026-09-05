@@ -30,15 +30,27 @@ function supportsNativeBackdrop() {
   return Number.isFinite(build) && build >= 22621;
 }
 function applyWindowMaterial(settings) {
-  if (!window || typeof window.setBackgroundMaterial !== 'function') return false;
-  try {
-    window.setBackgroundMaterial(
-      nativeBackdropSupported && settings.backgroundEffects.enabled ? 'acrylic' : 'none',
-    );
-    return true;
-  } catch {
-    return false;
+  if (!window) return false;
+  let updated = false;
+  if (typeof window.setBackgroundMaterial === 'function') {
+    try {
+      window.setBackgroundMaterial(
+        nativeBackdropSupported && settings.backgroundEffects.enabled ? 'acrylic' : 'none',
+      );
+      updated = true;
+    } catch {}
   }
+  if (typeof window.setTitleBarOverlay === 'function') {
+    try {
+      window.setTitleBarOverlay({
+        color: '#00000000',
+        symbolColor: settings.theme === 'light' ? '#1b261d' : '#edf4e9',
+        height: 32,
+      });
+      updated = true;
+    } catch {}
+  }
+  return updated;
 }
 function trusted(event) {
   if (!window || event.sender !== window.webContents || event.senderFrame?.url !== page)

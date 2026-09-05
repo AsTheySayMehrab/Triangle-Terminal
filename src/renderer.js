@@ -10,7 +10,9 @@ let settings,
   closingId,
   toastTimer,
   readerTimer,
-  nativeBackdropSupported = false;
+  nativeBackdropSupported = false,
+  focusMode = false,
+  previewTheme = null;
 let workMs = 0,
   paused = false,
   lastTick = performance.now(),
@@ -122,6 +124,13 @@ Object.assign(fa, {
   zwnj: '\u0646\u06cc\u0645\u200c\u0641\u0627\u0635\u0644\u0647',
   hideReader:
     '\u067e\u0646\u0647\u0627\u0646 \u06a9\u0631\u062f\u0646 \u062e\u0648\u0627\u0646\u0646\u062f\u0647',
+  focusMode:
+    '\u062a\u0645\u0631\u06a9\u0632 \u0628\u0631 \u062a\u0631\u0645\u06cc\u0646\u0627\u0644',
+  exitFocus:
+    '\u062e\u0631\u0648\u062c \u0627\u0632 \u062d\u0627\u0644\u062a \u062a\u0645\u0631\u06a9\u0632',
+  themeVercel: 'Vercel',
+  themeVercelNote:
+    '\u0633\u06cc\u0627\u0647\u060c \u0633\u0641\u06cc\u062f\u060c \u0628\u062f\u0648\u0646 \u062d\u0648\u0627\u0633\u200c\u067e\u0631\u062a\u06cc',
 });
 const en = {
   resume: 'Resume',
@@ -141,6 +150,10 @@ const en = {
   startedIn: 'Started in',
   noSession: 'No open session',
   hideReader: 'Hide reader',
+  focusMode: 'Focus terminal',
+  exitFocus: 'Exit focus',
+  themeVercel: 'Vercel',
+  themeVercelNote: 'Black, white, no distraction',
   backgroundNative: 'Native Acrylic is available on this Windows build.',
   backgroundFallback: 'This device uses a solid fallback for the background.',
 };
@@ -158,6 +171,16 @@ function safe(promise) {
   return promise.catch((error) => {
     toast(error.message || String(error));
   });
+}
+const themeAccents = Object.freeze({
+  midnight: '#b5f36c',
+  graphite: '#d2b3ff',
+  blueprint: '#72e7ef',
+  vercel: '#ededed',
+  light: '#527f23',
+});
+function themeAccent(theme) {
+  return themeAccents[theme] || themeAccents.midnight;
 }
 function palette() {
   const style = getComputedStyle(document.body);
@@ -202,6 +225,24 @@ function palette() {
       white: '#e8f6f7',
       brightBlack: '#668b95',
     },
+    vercel: {
+      black: '#171717',
+      red: '#ff6363',
+      green: '#a3a3a3',
+      yellow: '#d4d4d4',
+      blue: '#a3a3a3',
+      magenta: '#d4d4d4',
+      cyan: '#d4d4d4',
+      white: '#ededed',
+      brightBlack: '#737373',
+      brightRed: '#ff7b7b',
+      brightGreen: '#d4d4d4',
+      brightYellow: '#fafafa',
+      brightBlue: '#d4d4d4',
+      brightMagenta: '#fafafa',
+      brightCyan: '#fafafa',
+      brightWhite: '#ffffff',
+    },
     midnight: {
       black: '#263026',
       red: '#e79889',
@@ -214,12 +255,13 @@ function palette() {
       brightBlack: '#7c8c76',
     },
   };
-  const colors = palettes[settings.theme] || palettes.midnight;
+  const colors = palettes[document.body.dataset.theme || settings.theme] || palettes.midnight;
+  const accent = style.getPropertyValue('--accent').trim() || settings.accent;
   return {
     background: style.getPropertyValue('--terminal').trim() || '#070b08',
     foreground: style.getPropertyValue('--text').trim(),
-    cursor: settings.accent,
-    selectionBackground: settings.accent + '55',
+    cursor: accent,
+    selectionBackground: accent + '55',
     ...colors,
   };
 }
@@ -275,6 +317,9 @@ function readAppearanceControls() {
 }
 function applyBackgroundEffects(value) {
   const effects = backgroundValues(value);
+  const opacity = effects.opacity / 100;
+  const materialOpacity = Math.min(0.9, Math.max(0.5, 0.34 + opacity * 0.58));
+  const softMaterialOpacity = Math.max(0.34, materialOpacity - 0.16);
   document.documentElement.style.setProperty('--blur-amount', effects.blur + 'px');
   document.documentElement.style.setProperty(
     '--surface-opacity',
@@ -287,6 +332,11 @@ function applyBackgroundEffects(value) {
   document.documentElement.style.setProperty(
     '--noise-size',
     Math.round(effects.noiseScale * 140) + 'px',
+  );
+  document.documentElement.style.setProperty('--material-opacity', materialOpacity.toFixed(2));
+  document.documentElement.style.setProperty(
+    '--material-soft-opacity',
+    softMaterialOpacity.toFixed(2),
   );
   const reduced = window.matchMedia?.('(prefers-reduced-transparency: reduce)').matches;
   document.body.dataset.material =
@@ -307,9 +357,30 @@ function updateBackgroundSupport() {
 }
 function previewSettings() {
   const form = $('settings-form');
-  document.body.dataset.theme = form.elements.theme.value;
-  updateThemePicker(form.elements.theme.value);
+  const theme = form.elements.theme.value;
+  if (theme !== previewTheme) {
+    form.elements.accent.value = themeAccent(theme);
+    previewTheme = theme;
+  }
+  document.body.dataset.theme = theme;
+  document.documentElement.style.setProperty('--accent', form.elements.accent.value);
+  updateThemePicker(theme);
   applyBackgroundEffects(readAppearanceControls());
+  for (const s of sessions.values()) s.term.options.theme = palette();
+}
+function syncFocusModeControls() {
+  $('focus-mode').setAttribute('aria-pressed', String(focusMode));
+  $('focus-exit').hidden = !focusMode;
+  $('focus-exit').textContent = t('exitFocus');
+}
+function setFocusMode(value) {
+  focusMode = Boolean(value);
+  document.body.dataset.focus = String(focusMode);
+  syncFocusModeControls();
+  requestAnimationFrame(() => {
+    fitActive();
+    sessions.get(activeId)?.term.focus();
+  });
 }
 function applySettings() {
   document.documentElement.lang = settings.language;
@@ -327,6 +398,7 @@ function applySettings() {
   $('reader-panel').hidden = !settings.readerVisible;
   $('reader-toggle').textContent = t(settings.readerVisible ? 'hideReader' : 'reader');
   $('reader-toggle').setAttribute('aria-pressed', String(settings.readerVisible));
+  syncFocusModeControls();
   $('reader-direction').value = settings.readerDirection;
   $('shell-select').value = settings.defaultShell;
   for (const s of sessions.values()) {
@@ -448,7 +520,7 @@ async function newSession(shell = $('shell-select').value) {
     if (
       event.ctrlKey &&
       event.shiftKey &&
-      ['T', 'W', 'C', 'V', 'F'].includes(event.key.toUpperCase())
+      ['T', 'W', 'C', 'V', 'F', 'M'].includes(event.key.toUpperCase())
     )
       return false;
     if (event.ctrlKey && event.key === ',') return false;
@@ -639,6 +711,7 @@ function fillSettings(value) {
   form.elements.backgroundOpacity.value = value.backgroundEffects.opacity;
   form.elements.backgroundNoiseAmount.value = value.backgroundEffects.noiseAmount;
   form.elements.backgroundNoiseScale.value = value.backgroundEffects.noiseScale;
+  previewTheme = value.theme;
   updateThemePicker(value.theme);
   syncAppearanceControls(value.backgroundEffects);
 }
@@ -736,6 +809,8 @@ $('export').onclick = () =>
     })(),
   );
 $('settings-button').onclick = openSettings;
+$('focus-mode').onclick = () => setFocusMode(!focusMode);
+$('focus-exit').onclick = () => setFocusMode(false);
 function closeSettings() {
   $('settings-dialog').close();
   applySettings();
@@ -808,6 +883,10 @@ document.addEventListener('keydown', (event) => {
   if (key === 'F') {
     event.preventDefault();
     $('command').focus();
+  }
+  if (key === 'M') {
+    event.preventDefault();
+    setFocusMode(!focusMode);
   }
   if (key === 'C' && sessions.get(activeId)?.term.hasSelection()) {
     event.preventDefault();

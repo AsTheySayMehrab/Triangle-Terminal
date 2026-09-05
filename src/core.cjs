@@ -37,7 +37,7 @@ function validateSettings(value = {}) {
   };
   const enums = {
     language: ['en', 'fa'],
-    theme: ['midnight', 'graphite', 'blueprint', 'light'],
+    theme: ['midnight', 'graphite', 'blueprint', 'vercel', 'light'],
     cursorStyle: ['bar', 'block', 'underline'],
     readerDirection: ['auto', 'rtl', 'ltr'],
     defaultShell: ['powershell', 'cmd', 'pwsh'],
