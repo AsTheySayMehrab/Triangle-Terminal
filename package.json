@@ -1,0 +1,70 @@
+{
+  "name": "triangle-terminal",
+  "version": "0.1.0",
+  "description": "A bilingual Persian and English developer terminal",
+  "main": "src/main.cjs",
+  "private": true,
+  "license": "MIT",
+  "author": "Triangle Terminal contributors",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "keywords": [
+    "terminal",
+    "persian",
+    "farsi",
+    "rtl",
+    "powershell",
+    "codex",
+    "electron"
+  ],
+  "bin": {
+    "triangle": "bin/triangle.cjs"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "test:smoke": "node test/smoke.cjs",
+    "test:packaged": "node test/smoke.cjs --packaged",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm test",
+    "dist": "node tools/build.cjs"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "node-pty": "^1.1.0"
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "prettier": "3.6.2"
+  },
+  "build": {
+    "appId": "dev.triangle.terminal",
+    "productName": "Triangle Terminal",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "bin/**/*",
+      "test/electron-smoke.cjs",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "electronDist": "node_modules/electron/dist",
+    "npmRebuild": false,
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Triangle-Terminal-${version}-${arch}.exe"
+    }
+  }
+}

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Triangle Terminal</title>
+    <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">△</span>
+        <div>
+          TRIANGLE<span>TERMINAL / <b id="version">0.1</b></span>
+        </div>
+      </div>
+      <div class="sidebar-label" data-i18n="workspace">WORKSPACE</div>
+      <button id="workspace" class="workspace-card">
+        <span class="folder-icon">▱</span
+        ><span
+          ><b id="folder-name">Projects</b
+          ><small data-i18n="chooseFolder">Choose project folder</small></span
+        ><span>↗</span>
+      </button>
+      <div class="sidebar-label section-label">
+        <span data-i18n="sessions">SESSIONS</span
+        ><button id="new-session" class="icon-button" title="New terminal (Ctrl+Shift+T)">+</button>
+      </div>
+      <div id="session-list" class="session-list"></div>
+      <div class="sidebar-label section-label">
+        <span data-i18n="launchpad">AI & SHORTCUTS</span><span class="tiny-pill">CLI</span>
+      </div>
+      <div id="shortcuts" class="shortcuts"></div>
+      <div class="sidebar-bottom">
+        <div class="local-dot">
+          <i></i><span data-i18n="localFirst">Local terminal · your machine</span>
+        </div>
+        <button id="settings-button" class="settings-button">
+          <span>⚙</span><span data-i18n="settings">Customize workspace</span><kbd>Ctrl ,</kbd>
+        </button>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div>
+          <span class="eyebrow" data-i18n="developerSpace">YOUR DEVELOPER SPACE</span>
+          <h1>Triangle Terminal<span class="version-pill">PREVIEW</span></h1>
+        </div>
+        <div class="top-actions">
+          <button id="language-button">EN / فارسی</button
+          ><span class="clock" id="clock">00:00:00</span>
+        </div>
+      </header>
+      <section class="metrics">
+        <article>
+          <span data-i18n="sessionTime">SESSION TIME</span
+          ><strong id="session-time">00:00:00</strong
+          ><small data-i18n="sinceOpened">Since this workspace opened</small>
+        </article>
+        <article>
+          <span data-i18n="focusTime">WORKING TIME</span>
+          <div class="metric-row">
+            <strong id="work-time">00:00:00</strong
+            ><button id="pause-work" class="tiny-pill" data-i18n="pause">Pause</button>
+          </div>
+          <small id="work-state" data-i18n="idlePause">Pauses after 60 seconds idle</small>
+        </article>
+        <article>
+          <span data-i18n="battery">BATTERY</span><strong id="battery-value">—</strong
+          ><small id="battery-state" data-i18n="reading">Reading system status…</small>
+        </article>
+        <article>
+          <span data-i18n="memory">SYSTEM MEMORY</span><strong id="memory-value">—</strong
+          ><small id="memory-state">—</small>
+          <div class="meter"><i id="memory-meter"></i></div>
+        </article>
+      </section>
+      <section class="terminal-card">
+        <div class="terminal-toolbar">
+          <div class="toolbar-title">
+            <i class="live-dot"></i><b id="active-title">PowerShell</b><span id="process-id"></span>
+          </div>
+          <div class="toolbar-actions">
+            <select id="shell-select" aria-label="Shell for new sessions">
+              <option value="powershell">PowerShell</option>
+              <option value="cmd">CMD</option>
+              <option value="pwsh">PowerShell 7</option></select
+            ><button id="add-terminal" title="New terminal">+</button
+            ><button id="reader-toggle" data-i18n="reader">Persian reader</button
+            ><button id="export" title="Export current terminal buffer" data-i18n="export">
+              Export
+            </button>
+          </div>
+        </div>
+        <div class="terminal-body">
+          <div id="terminals"></div>
+          <aside id="reader-panel">
+            <div class="reader-heading">
+              <span data-i18n="readerTitle">BILINGUAL READER</span
+              ><select id="reader-direction" aria-label="Reader direction">
+                <option value="auto">Auto</option>
+                <option value="rtl">RTL</option>
+                <option value="ltr">LTR</option>
+              </select>
+            </div>
+            <p class="reader-hint" data-i18n="readerHint">
+              Live, selectable text with Persian shaping. Use the terminal for interactive apps.
+            </p>
+            <div id="reader-output" aria-label="Bilingual terminal output"></div>
+          </aside>
+        </div>
+        <div class="composer">
+          <div class="composer-heading">
+            <label for="command" data-i18n="composer">BILINGUAL COMMAND & PROMPT EDITOR</label>
+            <div>
+              <button id="zwnj" title="Insert Persian half-space (ZWNJ)">نیم‌فاصله</button
+              ><select id="input-direction" aria-label="Input direction">
+                <option value="auto">Auto ↔</option>
+                <option value="rtl">فارسی ←</option>
+                <option value="ltr">English →</option>
+              </select>
+            </div>
+          </div>
+          <textarea
+            id="command"
+            dir="auto"
+            spellcheck="false"
+            rows="2"
+            placeholder="Write a command or AI prompt… / دستور یا پیام خود را بنویسید"
+          ></textarea>
+          <div class="composer-footer">
+            <span data-i18n="composerHint"
+              >Ctrl+Enter to send · text keeps its original Unicode order</span
+            >
+            <div>
+              <button id="copy-command" data-i18n="copy">Copy</button
+              ><button id="send-command" class="primary" data-i18n="send">
+                Send to terminal ↵
+              </button>
+            </div>
+          </div>
+        </div>
+        <footer class="terminal-status">
+          <span><i class="live-dot"></i><span id="connection-status">Ready</span></span
+          ><span id="cwd-label" dir="auto"></span
+          ><span>UTF-8 <span class="status-divider">/</span> FA + EN</span>
+        </footer>
+      </section>
+      <footer class="app-footer">
+        <span data-i18n="footer">A little more clarity. A lot more possibility.</span
+        ><span data-i18n="quota">AI balance: unavailable · check your provider CLI</span>
+      </footer>
+    </main>
+    <dialog id="settings-dialog">
+      <form id="settings-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">MAKE IT YOURS</span>
+            <h2 data-i18n="settings">Customize workspace</h2>
+          </div>
+          <button type="button" id="close-settings" aria-label="Close">×</button>
+        </div>
+        <div class="settings-grid">
+          <label
+            ><span data-i18n="language">Language</span
+            ><select name="language">
+              <option value="en">English</option>
+              <option value="fa">فارسی</option>
+            </select></label
+          >
+          <label
+            ><span data-i18n="theme">Theme</span
+            ><select name="theme">
+              <option value="midnight">Midnight garden</option>
+              <option value="graphite">Graphite violet</option>
+              <option value="light">Paper</option>
+            </select></label
+          >
+          <label
+            ><span data-i18n="accent">Accent color</span><input name="accent" type="color"
+          /></label>
+          <label
+            ><span data-i18n="fontSize">Font size</span
+            ><input name="fontSize" type="number" min="11" max="30" required
+          /></label>
+          <label class="wide"
+            ><span data-i18n="fontFamily">Terminal font family</span
+            ><input name="fontFamily" maxlength="200" required
+          /></label>
+          <label
+            ><span data-i18n="cursor">Cursor</span
+            ><select name="cursorStyle">
+              <option value="bar">Bar</option>
+              <option value="block">Block</option>
+              <option value="underline">Underline</option>
+            </select></label
+          >
+          <label
+            ><span data-i18n="scrollback">Scrollback lines</span
+            ><input name="scrollback" type="number" min="100" max="20000" required
+          /></label>
+          <label
+            ><span data-i18n="defaultShell">Default shell</span
+            ><select name="defaultShell">
+              <option value="powershell">PowerShell</option>
+              <option value="cmd">CMD</option>
+              <option value="pwsh">PowerShell 7</option>
+            </select></label
+          >
+          <label class="checkbox"
+            ><input name="showBanner" type="checkbox" /><span data-i18n="banner"
+              >Show startup ASCII art</span
+            ></label
+          >
+          <label class="wide"
+            ><span data-i18n="shortcutJson">Shortcuts (JSON: label, command, description)</span
+            ><textarea name="shortcuts" rows="7" dir="ltr" spellcheck="false"></textarea>
+          </label>
+        </div>
+        <p class="settings-note" data-i18n="shortcutNote">
+          Shortcuts stage a command in the editor. Review it, then send. AI tools must be installed
+          separately.
+        </p>
+        <p id="settings-error" role="alert"></p>
+        <div class="dialog-footer">
+          <button type="button" id="reset-settings" data-i18n="reset">Reset defaults</button
+          ><button class="primary" type="submit" data-i18n="save">Save preferences</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="close-dialog">
+      <h2 data-i18n="closeTitle">Close this terminal?</h2>
+      <p data-i18n="closeWarning">The shell and its running programs will be stopped.</p>
+      <div class="dialog-footer">
+        <button id="cancel-close" data-i18n="cancel">Cancel</button
+        ><button id="confirm-close" class="primary" data-i18n="close">Close terminal</button>
+      </div>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+    <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+    <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>

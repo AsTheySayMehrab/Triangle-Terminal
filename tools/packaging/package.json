@@ -1,0 +1,9 @@
+{
+  "name": "triangle-terminal-packaging",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Separately installed, locked Windows release tooling",
+  "devDependencies": {
+    "electron-builder": "26.15.3"
+  }
+}

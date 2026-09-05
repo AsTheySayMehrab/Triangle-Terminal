@@ -1,0 +1,16 @@
+name: Feature request / پیشنهاد قابلیت
+description: Suggest an improvement for developers or Persian/English users.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What task is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe a concrete example and any alternatives you tried.
+    validations:
+      required: true

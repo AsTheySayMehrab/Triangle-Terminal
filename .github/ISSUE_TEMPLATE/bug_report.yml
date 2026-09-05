@@ -1,0 +1,37 @@
+name: Bug report / گزارش خطا
+description: Report a reproducible problem with Triangle Terminal.
+body:
+  - type: markdown
+    attributes:
+      value: 'English and Persian reports are welcome. Remove tokens, private paths, and personal data from screenshots and logs. Report vulnerabilities privately as described in SECURITY.md.'
+  - type: input
+    id: version
+    attributes:
+      label: Triangle Terminal version
+      placeholder: 0.1.0 / source checkout or portable EXE
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows, shell, and AI CLI versions
+      placeholder: Windows 11, Windows PowerShell 5.1, Codex CLI version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal command or Persian text sample when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or logs (optional, remove private data)
