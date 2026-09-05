@@ -7,11 +7,13 @@ const defaults = {
   accent: '#b5f36c',
   fontFamily: 'Cascadia Code, Consolas, monospace',
   fontSize: 15,
+  textFont: 'Inter',
   cursorStyle: 'bar',
   scrollback: 5000,
   readerDirection: 'auto',
   showBanner: true,
   defaultShell: 'powershell',
+  aiProvider: 'codex',
   readerVisible: false,
   backgroundEffects: {
     enabled: true,
@@ -37,10 +39,12 @@ function validateSettings(value = {}) {
   };
   const enums = {
     language: ['en', 'fa'],
+    textFont: ['Inter', 'Kalameh', 'Tahoma', 'Segoe UI', 'Arial'],
     theme: ['midnight', 'graphite', 'blueprint', 'vercel', 'light'],
     cursorStyle: ['bar', 'block', 'underline'],
     readerDirection: ['auto', 'rtl', 'ltr'],
     defaultShell: ['powershell', 'cmd', 'pwsh'],
+    aiProvider: ['codex', 'claude', 'gemini'],
   };
   for (const [key, choices] of Object.entries(enums))
     if (choices.includes(value[key])) result[key] = value[key];

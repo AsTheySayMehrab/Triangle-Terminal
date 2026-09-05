@@ -383,6 +383,7 @@ function setFocusMode(value) {
   });
 }
 function applySettings() {
+  document.documentElement.style.setProperty('--text-font', '"' + settings.textFont + '"');
   document.documentElement.lang = settings.language;
   document.body.dir = settings.language === 'fa' ? 'rtl' : 'ltr';
   document.body.dataset.theme = settings.theme;
@@ -396,6 +397,7 @@ function applySettings() {
     .forEach((node) => (node.textContent = t(node.dataset.i18n)));
   $('pause-work').textContent = t(paused ? 'resume' : 'pause');
   $('reader-panel').hidden = !settings.readerVisible;
+  $('reader-resizer').hidden = !settings.readerVisible;
   $('reader-toggle').textContent = t(settings.readerVisible ? 'hideReader' : 'reader');
   $('reader-toggle').setAttribute('aria-pressed', String(settings.readerVisible));
   syncFocusModeControls();
@@ -449,7 +451,7 @@ const banner = [
   '  Your shell. Your language. Your space.',
   '',
 ].join('\r\n');
-async function newSession(shell = $('shell-select').value) {
+async function newSession(shell = $('shell-select').value, options = {}) {
   if (sessions.size >= 12) {
     toast('Maximum 12 terminal sessions');
     return;
@@ -480,7 +482,7 @@ async function newSession(shell = $('shell-select').value) {
   term.open(host);
   let result;
   try {
-    result = await api.createSession({ shell, cwd, cols: 80, rows: 24 });
+    result = await api.createSession({ shell, cwd: options.cwd || cwd, cols: 80, rows: 24 });
   } catch (error) {
     term.dispose();
     pane.remove();
@@ -491,12 +493,13 @@ async function newSession(shell = $('shell-select').value) {
   const s = {
     ...result,
     shell,
-    cwd,
+    cwd: options.cwd || cwd,
     term,
     fit,
     pane,
     welcome,
-    name: name + ' ' + ++serial,
+    name: options.name?.trim() || name + ' ' + ++serial,
+    agent: options.agent?.trim() || '',
     exited: false,
     draft: '',
   };
@@ -529,6 +532,7 @@ async function newSession(shell = $('shell-select').value) {
   renderSessions();
   activate(s.id);
   await safe(api.attachSession(s.id));
+  if (s.agent) await safe(api.write(s.id, s.agent + '\r'));
 }
 function renderSessions() {
   $('session-list').replaceChildren();
@@ -699,9 +703,11 @@ function fillSettings(value) {
     'accent',
     'fontSize',
     'fontFamily',
+    'textFont',
     'cursorStyle',
     'scrollback',
     'defaultShell',
+    'aiProvider',
   ])
     form.elements[key].value = value[key];
   form.elements.showBanner.checked = value.showBanner;
@@ -717,6 +723,17 @@ function fillSettings(value) {
 }
 function openSettings() {
   fillSettings(settings);
+  document.fonts
+    .load('16px Kalameh')
+    .then((fonts) => {
+      $('font-status').textContent = fonts.length
+        ? 'Kalameh is available. Choose a text font and save preferences.'
+        : 'Kalameh is not installed. Import your Kalameh font file; Inter is used until then.';
+    })
+    .catch(() => {
+      $('font-status').textContent =
+        'Kalameh is not installed. Import your Kalameh font file; Inter is used until then.';
+    });
   $('settings-error').textContent = '';
   $('settings-dialog').showModal();
   previewSettings();
@@ -738,7 +755,15 @@ api.onExit(({ id, exitCode }) => {
     updateActive();
   }
 });
-$('new-session').onclick = () => safe(newSession());
+$('new-session').onclick = $('add-terminal').onclick = () => {
+  const form = $('session-form');
+  form.elements.name.value = '';
+  form.elements.shell.value = $('shell-select').value;
+  form.elements.cwd.value = cwd;
+  form.elements.agent.value = '';
+  $('session-error').textContent = '';
+  $('session-dialog').showModal();
+};
 $('workspace').onclick = () =>
   safe(
     (async () => {
@@ -808,6 +833,85 @@ $('export').onclick = () =>
         toast(t('exported'));
     })(),
   );
+async function refreshQuota() {
+  const provider = settings?.aiProvider || 'codex';
+  const names = { codex: 'Codex CLI', claude: 'Claude Code', gemini: 'Gemini CLI' };
+  $('quota-provider').textContent = names[provider];
+  $('refresh-usage').disabled = true;
+  const display = (prefix, value) => {
+    const percent = value?.remaining;
+    const known = Number.isFinite(percent);
+    $(prefix + '-value').textContent = known ? Math.round(percent) + '% left' : '—';
+    $(prefix + '-meter').style.width = known ? percent + '%' : '0%';
+    $(prefix + '-meter').style.background = known && percent <= 20 ? '#e79889' : 'var(--accent)';
+    $(prefix + '-value').title =
+      known && value.resetsAt
+        ? 'Resets ' + new Date(value.resetsAt * 1000).toLocaleString()
+        : 'No limit reported';
+  };
+  display('five-hour', null);
+  display('weekly', null);
+  $('quota-status').textContent = 'Reading account limits…';
+  try {
+    const result = await api.usage(provider);
+    if (provider !== (settings?.aiProvider || 'codex')) return;
+    display('five-hour', result.fiveHour);
+    display('weekly', result.weekly);
+    $('quota-status').textContent =
+      result.message ||
+      (result.fiveHour || result.weekly
+        ? 'Codex account · updated ' + new Date(result.updatedAt).toLocaleTimeString()
+        : 'No 5-hour or weekly limits reported. Check your Codex login and plan.');
+  } catch (error) {
+    $('quota-status').textContent = error.message;
+  } finally {
+    $('refresh-usage').disabled = false;
+  }
+}
+$('refresh-usage').onclick = () => safe(refreshQuota());
+let importedFont;
+async function loadKalameh(data) {
+  if (!data) return;
+  const font = new FontFace('Kalameh', 'url(data:font/ttf;base64,' + data + ')');
+  await font.load();
+  if (importedFont) document.fonts.delete(importedFont);
+  document.fonts.add(font);
+  importedFont = font;
+  requestAnimationFrame(fitActive);
+}
+$('import-font').onclick = () =>
+  safe(
+    (async () => {
+      const data = await api.importFont();
+      if (!data) return;
+      await loadKalameh(data);
+      $('settings-form').elements.textFont.value = 'Kalameh';
+      $('font-status').textContent = 'Kalameh imported. Save preferences to apply.';
+    })(),
+  );
+$('clear-terminal').onclick = () => sessions.get(activeId)?.term.clear();
+$('open-usage').onclick = () => safe(api.openUsage(settings?.aiProvider || 'codex'));
+$('close-session-dialog').onclick = $('cancel-session').onclick = () => $('session-dialog').close();
+$('choose-session-folder').onclick = () =>
+  safe(
+    api.chooseFolder().then((folder) => {
+      if (folder) $('session-form').elements.cwd.value = folder;
+    }),
+  );
+$('session-form').onsubmit = (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const name = form.elements.name.value.trim();
+  const sessionCwd = form.elements.cwd.value.trim();
+  const agent = form.elements.agent.value.trim();
+  if (!name || !sessionCwd || /[\x00-\x1f]/.test(agent)) {
+    $('session-error').textContent =
+      'Enter a name, an existing folder, and a single-line agent command.';
+    return;
+  }
+  $('session-dialog').close();
+  safe(newSession(form.elements.shell.value, { name, cwd: sessionCwd, agent }));
+};
 $('settings-button').onclick = openSettings;
 $('focus-mode').onclick = () => setFocusMode(!focusMode);
 $('focus-exit').onclick = () => setFocusMode(false);
@@ -844,7 +948,16 @@ $('settings-form').onsubmit = async (event) => {
   try {
     const form = event.target;
     const candidate = { ...settings };
-    for (const key of ['language', 'theme', 'accent', 'fontFamily', 'cursorStyle', 'defaultShell'])
+    for (const key of [
+      'language',
+      'theme',
+      'accent',
+      'fontFamily',
+      'textFont',
+      'cursorStyle',
+      'defaultShell',
+      'aiProvider',
+    ])
       candidate[key] = form.elements[key].value;
     for (const key of ['fontSize', 'scrollback']) candidate[key] = Number(form.elements[key].value);
     candidate.showBanner = form.elements.showBanner.checked;
@@ -852,6 +965,7 @@ $('settings-form').onsubmit = async (event) => {
     candidate.shortcuts = JSON.parse(form.elements.shortcuts.value);
     settings = await api.saveSettings(candidate);
     applySettings();
+    safe(refreshQuota());
     $('settings-dialog').close();
     toast(t('saved'));
   } catch (error) {
@@ -874,7 +988,7 @@ document.addEventListener('keydown', (event) => {
   const key = event.key.toUpperCase();
   if (key === 'T') {
     event.preventDefault();
-    safe(newSession());
+    $('new-session').click();
   }
   if (key === 'W') {
     event.preventDefault();
@@ -902,10 +1016,95 @@ document.addEventListener('keydown', (event) => {
     );
   }
 });
+function installResizer(id, property, measure, delta, minimum, maximum) {
+  const handle = $(id);
+  const root = document.documentElement;
+  const update = (value) => {
+    const bounded = Math.round(Math.max(minimum, Math.min(maximum(), value)));
+    root.style.setProperty(property, bounded + 'px');
+    handle.setAttribute('aria-valuenow', bounded);
+    handle.setAttribute('aria-valuemin', minimum);
+    handle.setAttribute('aria-valuemax', Math.round(maximum()));
+    requestAnimationFrame(fitActive);
+  };
+  const save = () => {
+    try {
+      localStorage.setItem('triangle-layout:' + id, String(measure()));
+    } catch {}
+  };
+  try {
+    const saved = Number(localStorage.getItem('triangle-layout:' + id));
+    if (saved > 0 && Number.isFinite(saved)) update(saved);
+  } catch {}
+  let drag;
+  handle.onpointerdown = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    drag = { x: event.clientX, y: event.clientY, size: measure() };
+    handle.setPointerCapture(event.pointerId);
+    document.body.classList.add('resizing');
+  };
+  handle.onpointermove = (event) => {
+    if (drag) update(drag.size + delta(event.clientX - drag.x, event.clientY - drag.y));
+  };
+  const finish = () => {
+    if (!drag) return;
+    drag = null;
+    document.body.classList.remove('resizing');
+    save();
+  };
+  handle.onpointerup = handle.onpointercancel = handle.onlostpointercapture = finish;
+  handle.ondblclick = () => {
+    root.style.removeProperty(property);
+    try {
+      localStorage.removeItem('triangle-layout:' + id);
+    } catch {}
+    requestAnimationFrame(fitActive);
+  };
+  handle.onkeydown = (event) => {
+    const offsets = {
+      ArrowLeft: [-12, 0],
+      ArrowRight: [12, 0],
+      ArrowUp: [0, -12],
+      ArrowDown: [0, 12],
+    };
+    if (!offsets[event.key]) return;
+    event.preventDefault();
+    update(measure() + delta(...offsets[event.key]));
+    save();
+  };
+}
+installResizer(
+  'sidebar-resizer',
+  '--sidebar-width',
+  () => document.querySelector('.sidebar').clientWidth,
+  (x) => (document.body.dir === 'rtl' ? -x : x),
+  180,
+  () => innerWidth * 0.32,
+);
+installResizer(
+  'reader-resizer',
+  '--reader-width',
+  () => $('reader-panel').clientWidth,
+  (x) => -x,
+  150,
+  () => document.querySelector('.terminal-body').clientWidth * 0.55,
+);
+installResizer(
+  'composer-resizer',
+  '--composer-height',
+  () => $('command').clientHeight,
+  (_x, y) => -y,
+  48,
+  () => innerHeight * 0.22,
+);
 new ResizeObserver(() => requestAnimationFrame(fitActive)).observe($('terminals'));
 safe(
   (async () => {
     const info = await api.bootstrap();
+    await loadKalameh(info.kalameh).catch(() =>
+      toast('The imported Kalameh font could not be loaded. Import a valid font file.'),
+    );
     settings = info.settings;
     defaultSettings = info.defaults;
     nativeBackdropSupported = Boolean(info.nativeBackdropSupported);
@@ -914,8 +1113,12 @@ safe(
     updateFolder();
     applySettings();
     await pollStats();
+    safe(refreshQuota());
     await newSession(settings.defaultShell);
     setInterval(tick, 1000);
     setInterval(pollStats, 3000);
+    setInterval(() => {
+      if (!document.hidden && !$('refresh-usage').disabled) safe(refreshQuota());
+    }, 60000);
   })(),
 );

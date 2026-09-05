@@ -148,6 +148,50 @@ exports.run = async ({ app, window, resultDir }) => {
     window.setSize(960, 680);
     await new Promise((r) => setTimeout(r, 400));
     assert.equal(await js('document.body.scrollWidth <= innerWidth'), true);
+    assert.ok(
+      await js("document.querySelector('.terminal-body').clientHeight >= 180"),
+      'Compact terminal retains usable height',
+    );
+    for (const [id, target, dx, dy] of [
+      ['sidebar-resizer', '.sidebar', 35, 0],
+      ['reader-resizer', '#reader-panel', -30, 0],
+      ['composer-resizer', '#command', 0, -20],
+    ]) {
+      const before = await js(
+        `document.querySelector(${JSON.stringify(target)}).getBoundingClientRect().${dy ? 'height' : 'width'}`,
+      );
+      const point = await js(
+        `(() => { const r = $('${id}').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`,
+      );
+      window.webContents.sendInputEvent({
+        type: 'mouseDown',
+        ...point,
+        button: 'left',
+        clickCount: 1,
+      });
+      window.webContents.sendInputEvent({
+        type: 'mouseMove',
+        x: point.x + dx,
+        y: point.y + dy,
+        modifiers: ['leftButtonDown'],
+      });
+      window.webContents.sendInputEvent({
+        type: 'mouseUp',
+        x: point.x + dx,
+        y: point.y + dy,
+        button: 'left',
+        clickCount: 1,
+      });
+      await new Promise((r) => setTimeout(r, 100));
+      assert.ok(
+        (await js(
+          `document.querySelector(${JSON.stringify(target)}).getBoundingClientRect().${dy ? 'height' : 'width'}`,
+        )) >
+          before + 5,
+        id + ' responds to mouse dragging',
+      );
+      await js(`$('${id}').ondblclick()`);
+    }
     fs.writeFileSync(
       path.join(resultDir, 'triangle-compact.png'),
       (await window.webContents.capturePage()).toPNG(),
