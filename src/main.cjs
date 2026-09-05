@@ -23,6 +23,23 @@ const testOutput = process.env.TRIANGLE_TEST_OUTPUT || path.join(__dirname, '..'
 let inputDirectory;
 if (smoke) app.setPath('userData', path.join(testOutput, 'profile'));
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
+let nativeBackdropSupported = false;
+function supportsNativeBackdrop() {
+  if (process.platform !== 'win32') return false;
+  const build = Number(process.getSystemVersion().split('.')[2]);
+  return Number.isFinite(build) && build >= 22621;
+}
+function applyWindowMaterial(settings) {
+  if (!window || typeof window.setBackgroundMaterial !== 'function') return false;
+  try {
+    window.setBackgroundMaterial(
+      nativeBackdropSupported && settings.backgroundEffects.enabled ? 'acrylic' : 'none',
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
 function trusted(event) {
   if (!window || event.sender !== window.webContents || event.senderFrame?.url !== page)
     throw new Error('Untrusted IPC sender');
@@ -86,6 +103,8 @@ function refreshBattery() {
 }
 app.whenReady().then(() => {
   inputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'triangle-input-'));
+  const initialSettings = loadSettings(settingsFile());
+  nativeBackdropSupported = supportsNativeBackdrop();
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) =>
     callback(false),
   );
@@ -95,7 +114,19 @@ app.whenReady().then(() => {
     minWidth: 920,
     minHeight: 650,
     title: 'Triangle Terminal',
-    backgroundColor: '#101410',
+    frame: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#00000000',
+      symbolColor: '#edf4e9',
+      height: 32,
+    },
+    transparent: true,
+    backgroundColor: '#00000000',
+    backgroundMaterial:
+      nativeBackdropSupported && initialSettings.backgroundEffects.enabled ? 'acrylic' : 'none',
+    roundedCorners: true,
+    darkTheme: true,
     show: !smoke,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -107,6 +138,7 @@ app.whenReady().then(() => {
       offscreen: smoke,
     },
   });
+  applyWindowMaterial(initialSettings);
   window.removeMenu();
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event) => event.preventDefault());
@@ -125,6 +157,7 @@ app.whenReady().then(() => {
       cwd: startupDirectory(),
       platform: process.platform,
       version: app.getVersion(),
+      nativeBackdropSupported,
     };
   });
   handle('settings:save', (input) => {
@@ -132,6 +165,7 @@ app.whenReady().then(() => {
     fs.mkdirSync(app.getPath('userData'), { recursive: true });
     fs.writeFileSync(settingsFile() + '.tmp', JSON.stringify(settings, null, 2), 'utf8');
     fs.renameSync(settingsFile() + '.tmp', settingsFile());
+    applyWindowMaterial(settings);
     return settings;
   });
   handle('folder:choose', async () => {

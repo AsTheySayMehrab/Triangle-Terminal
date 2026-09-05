@@ -1,6 +1,6 @@
 # Triangle Terminal △
 
-A Windows desktop terminal for Persian and English developers. Real PowerShell and CMD sessions, an AI CLI launchpad, a bilingual editor and reader, and a customizable dashboard.
+A Windows desktop terminal for Persian and English developers. Real PowerShell and CMD sessions, a bilingual editor and reader, local CLI shortcuts, and a focused terminal workspace.
 
 **Windows x64 · 0.1.0 preview · MIT**
 
@@ -33,7 +33,8 @@ To make `triangle` available from other directories, optionally run `npm link` y
 ## Included
 
 - Independent PowerShell, CMD, and optional PowerShell 7 tabs, real PTYs, terminal resizing, colors, interactive programs, shell history, Ctrl+C, and native shell commands.
-- Triangle ASCII startup artwork, three themes, accent color, terminal font, font size, cursor, scrollback, default shell, and editable command shortcuts.
+- Triangle ASCII startup artwork, four themes, accent color, terminal font, font size, cursor, scrollback, default shell, and editable command shortcuts.
+- Optional Windows Acrylic background material with saved blur amount, opacity, noise amount, and noise scale controls. Unsupported systems use a solid, readable fallback.
 - English/Persian interface, automatic or explicit editor direction, native browser Persian shaping, half-space (ZWNJ) insertion, and Unicode clipboard support.
 - Live bilingual reader with connected Persian letters and bidirectional text layout. It follows the active terminal's most recent 600 physical buffer lines and joins wrapped lines.
 - Project directory picker, per-tab editor drafts, transcript export, and confirmation before stopping sessions.
@@ -57,6 +58,10 @@ Install and authenticate your preferred AI CLI separately. For Codex, follow the
 Battery charge comes from Windows. **AI credit balance, remaining subscription allowance, token totals, and model cost are not connected**; the interface says unavailable rather than displaying invented values. Check your provider's own CLI/account tools. AI shortcuts can be edited to include any installed local AI tool.
 
 Work time counts while Triangle is focused and the system has been active within 60 seconds. It is not command execution duration. Timers restart when the application restarts. The displayed project path is the session's starting directory; the shell prompt shows later directory changes.
+
+## Background material and themes
+
+Open **Customize workspace** to preview Midnight, Graphite, Blueprint, or Paper before saving. The background controls tune Blur amount, Opacity, Noise amount, and Noise scale independently. The frosted option uses Electron's native Acrylic material on supported Windows builds; the renderer keeps an opaque fallback for older systems and reduced-transparency preferences. See Electron's [window material options](https://www.electronjs.org/docs/latest/api/structures/base-window-options) and [title bar overlay guidance](https://www.electronjs.org/docs/latest/tutorial/custom-title-bar).
 
 ## Keyboard shortcuts
 

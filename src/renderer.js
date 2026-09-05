@@ -9,7 +9,8 @@ let settings,
   serial = 0,
   closingId,
   toastTimer,
-  readerTimer;
+  readerTimer,
+  nativeBackdropSupported = false;
 let workMs = 0,
   paused = false,
   lastTick = performance.now(),
@@ -77,6 +78,51 @@ const fa = {
   startedIn: 'پوشه شروع',
   noSession: 'نشستی باز نیست',
 };
+Object.assign(fa, {
+  newSessionHint:
+    '\u06cc\u06a9 \u067e\u0648\u0633\u062a\u0647 \u0631\u0627 \u0627\u0646\u062a\u062e\u0627\u0628 \u06a9\u0646\u06cc\u062f \u0648 \u0633\u067e\u0633 \u0646\u0634\u0633\u062a \u0631\u0627 \u0628\u0627\u0632 \u06a9\u0646\u06cc\u062f',
+  terminalWorkspace: '\u0645\u062d\u06cc\u0637 \u062a\u0631\u0645\u06cc\u0646\u0627\u0644',
+  preview: '\u067e\u06cc\u0634\u200c\u0646\u0645\u0627\u06cc\u0634',
+  preferences: '\u062a\u0646\u0638\u06cc\u0645\u0627\u062a',
+  settingsIntro:
+    '\u0645\u0627\u062f\u0647\u060c \u0632\u0628\u0627\u0646 \u0648 \u062c\u0632\u0626\u06cc\u0627\u062a \u062a\u0631\u0645\u06cc\u0646\u0627\u0644 \u0631\u0627 \u062a\u0646\u0638\u06cc\u0645 \u06a9\u0646\u06cc\u062f.',
+  themeIntro:
+    '\u06cc\u06a9 \u0633\u0637\u062d \u0645\u062a\u0645\u0631\u06a9\u0632 \u0628\u0631\u0627\u06cc \u06a9\u0627\u0631 \u0627\u0646\u062a\u062e\u0627\u0628 \u06a9\u0646\u06cc\u062f.',
+  livePreview: '\u067e\u06cc\u0634\u200c\u0646\u0645\u0627\u06cc\u0634 \u0632\u0646\u062f\u0647',
+  themeMidnight: '\u0646\u06cc\u0645\u0647\u200c\u0634\u0628',
+  themeMidnightNote:
+    '\u0633\u0628\u0632 \u0639\u0645\u06cc\u0642 \u0648 \u0644\u06cc\u0645\u0648\u06cc \u0646\u0631\u0645',
+  themeGraphite: '\u06af\u0631\u0627\u0641\u06cc\u062a',
+  themeGraphiteNote:
+    '\u062a\u06cc\u0631\u0647 \u0645\u062a\u0639\u0627\u062f\u0644 \u0648 \u0628\u0646\u0641\u0634 \u0646\u0631\u0645',
+  themeBlueprint: '\u0646\u0642\u0634\u0647',
+  themeBlueprintNote:
+    '\u0622\u0628\u06cc \u062a\u06cc\u0631\u0647 \u0648 \u0633\u06cc\u0627\u0646 \u0633\u0641\u06cc\u062f',
+  themeLight: '\u06a9\u0627\u063a\u0630',
+  themeLightNote:
+    '\u0631\u0648\u0634\u0646 \u06af\u0631\u0645 \u0648 \u067e\u0631\u062a\u0645\u0627\u06cc\u0647',
+  background: '\u0645\u0627\u062f\u0647 \u067e\u0633\u200c\u0632\u0645\u06cc\u0646\u0647',
+  backgroundNote:
+    '\u0645\u0627\u062f\u0647 Acrylic \u062f\u0631 \u0648\u06cc\u0646\u062f\u0648\u0632 \u067e\u0634\u062a\u06cc\u0628\u0627\u0646\u06cc\u200c\u0634\u062f\u0647. \u062f\u0631 \u0633\u0627\u06cc\u0631 \u0633\u06cc\u0633\u062a\u0645\u200c\u0647\u0627 \u0633\u0637\u062d \u062a\u0648\u067e\u0631\u0641\u0644 \u062c\u0627\u06cc\u06af\u0632\u06cc\u0646 \u0645\u06cc\u200c\u0634\u0648\u062f.',
+  backgroundEnabled: '\u067e\u0633\u200c\u0632\u0645\u06cc\u0646\u0647 \u0634\u0641\u0627\u0641',
+  backgroundNative:
+    '\u0645\u0627\u062f\u0647 Acrylic \u062f\u0631 \u0627\u06cc\u0646 \u0648\u06cc\u0646\u062f\u0648\u0632 \u0641\u0639\u0627\u0644 \u0627\u0633\u062a.',
+  backgroundFallback:
+    '\u0627\u06cc\u0646 \u062f\u0633\u062a\u06af\u0627\u0647 \u0627\u0632 \u0633\u0637\u062d \u062c\u0627\u0645\u062f \u0627\u0633\u062a\u0641\u0627\u062f\u0647 \u0645\u06cc\u200c\u06a9\u0646\u062f.',
+  backgroundEnabledNote:
+    '\u0645\u06cc\u0632\u0627\u0646 \u062e\u0648\u0627\u0646\u0627\u06cc\u06cc \u0631\u0627 \u062d\u0641\u0638 \u0645\u06cc\u200c\u06a9\u0646\u062f.',
+  blurAmount: '\u0645\u06cc\u0632\u0627\u0646 \u062a\u0627\u0631\u06cc',
+  opacity: '\u0634\u0641\u0627\u0641\u06cc\u062a',
+  noiseAmount: '\u0645\u06cc\u0632\u0627\u0646 \u0646\u0648\u06cc\u0632',
+  noiseScale: '\u0627\u0646\u062f\u0627\u0632\u0647 \u0646\u0648\u06cc\u0632',
+  workspaceSettings:
+    '\u062c\u0632\u0626\u06cc\u0627\u062a \u0645\u062d\u06cc\u0637 \u06a9\u0627\u0631',
+  workspaceSettingsIntro:
+    '\u06a9\u0646\u062a\u0631\u0644\u0647\u0627\u06cc\u06cc \u06a9\u0647 \u0631\u0641\u062a\u0627\u0631 \u062a\u0631\u0645\u06cc\u0646\u0627\u0644 \u0631\u0627 \u062a\u063a\u06cc\u06cc\u0631 \u0645\u06cc\u200c\u062f\u0647\u0646\u062f.',
+  zwnj: '\u0646\u06cc\u0645\u200c\u0641\u0627\u0635\u0644\u0647',
+  hideReader:
+    '\u067e\u0646\u0647\u0627\u0646 \u06a9\u0631\u062f\u0646 \u062e\u0648\u0627\u0646\u0646\u062f\u0647',
+});
 const en = {
   resume: 'Resume',
   ready: 'Ready',
@@ -94,6 +140,9 @@ const en = {
   exported: 'Transcript saved',
   startedIn: 'Started in',
   noSession: 'No open session',
+  hideReader: 'Hide reader',
+  backgroundNative: 'Native Acrylic is available on this Windows build.',
+  backgroundFallback: 'This device uses a solid fallback for the background.',
 };
 document.querySelectorAll('[data-i18n]').forEach((node) => {
   en[node.dataset.i18n] = node.textContent;
@@ -112,44 +161,155 @@ function safe(promise) {
 }
 function palette() {
   const style = getComputedStyle(document.body);
-  const colors =
-    settings.theme === 'light'
-      ? {
-          black: '#20271c',
-          red: '#9e3024',
-          green: '#3a6416',
-          yellow: '#775700',
-          blue: '#28538c',
-          magenta: '#75409b',
-          cyan: '#126d62',
-          white: '#43533c',
-          brightBlack: '#66735f',
-          brightRed: '#ad3a29',
-          brightGreen: '#3a6416',
-          brightYellow: '#775700',
-          brightBlue: '#28538c',
-          brightMagenta: '#75409b',
-          brightCyan: '#126d62',
-          brightWhite: '#263122',
-        }
-      : {
-          black: '#263026',
-          red: '#e79889',
-          green: '#b5f36c',
-          yellow: '#edce80',
-          blue: '#8bbde1',
-          magenta: '#c6a5e3',
-          cyan: '#88d5c7',
-          white: '#e7eddf',
-          brightBlack: '#7c8c76',
-        };
+  const palettes = {
+    light: {
+      black: '#20271c',
+      red: '#9e3024',
+      green: '#3a6416',
+      yellow: '#775700',
+      blue: '#28538c',
+      magenta: '#75409b',
+      cyan: '#126d62',
+      white: '#43533c',
+      brightBlack: '#66735f',
+      brightRed: '#ad3a29',
+      brightGreen: '#3a6416',
+      brightYellow: '#775700',
+      brightBlue: '#28538c',
+      brightMagenta: '#75409b',
+      brightCyan: '#126d62',
+      brightWhite: '#263122',
+    },
+    graphite: {
+      black: '#25222d',
+      red: '#ff9e9e',
+      green: '#b7f0a1',
+      yellow: '#e8d08a',
+      blue: '#9dc8ff',
+      magenta: '#d2b3ff',
+      cyan: '#9ee5dc',
+      white: '#eeeaf5',
+      brightBlack: '#817889',
+    },
+    blueprint: {
+      black: '#11212c',
+      red: '#ff9f96',
+      green: '#a4e6b0',
+      yellow: '#f0d88b',
+      blue: '#92cfff',
+      magenta: '#d3b5ff',
+      cyan: '#72e7ef',
+      white: '#e8f6f7',
+      brightBlack: '#668b95',
+    },
+    midnight: {
+      black: '#263026',
+      red: '#e79889',
+      green: '#b5f36c',
+      yellow: '#edce80',
+      blue: '#8bbde1',
+      magenta: '#c6a5e3',
+      cyan: '#88d5c7',
+      white: '#e7eddf',
+      brightBlack: '#7c8c76',
+    },
+  };
+  const colors = palettes[settings.theme] || palettes.midnight;
   return {
-    background: style.getPropertyValue('--terminal').trim(),
+    background: style.getPropertyValue('--terminal').trim() || '#070b08',
     foreground: style.getPropertyValue('--text').trim(),
     cursor: settings.accent,
     selectionBackground: settings.accent + '55',
     ...colors,
   };
+}
+function backgroundValues(
+  value = settings?.backgroundEffects || defaultSettings?.backgroundEffects,
+) {
+  const fallback = defaultSettings?.backgroundEffects || {
+    enabled: true,
+    blur: 18,
+    opacity: 84,
+    noiseAmount: 5,
+    noiseScale: 1.2,
+  };
+  return {
+    enabled: typeof value?.enabled === 'boolean' ? value.enabled : fallback.enabled,
+    blur: Number.isFinite(value?.blur) ? value.blur : fallback.blur,
+    opacity: Number.isFinite(value?.opacity) ? value.opacity : fallback.opacity,
+    noiseAmount: Number.isFinite(value?.noiseAmount) ? value.noiseAmount : fallback.noiseAmount,
+    noiseScale: Number.isFinite(value?.noiseScale) ? value.noiseScale : fallback.noiseScale,
+  };
+}
+function syncAppearanceControls(value) {
+  const effects = backgroundValues(value);
+  const form = $('settings-form');
+  if (!form) return;
+  form.elements.backgroundEnabled.checked = effects.enabled;
+  form.elements.backgroundBlur.value = effects.blur;
+  form.elements.backgroundOpacity.value = effects.opacity;
+  form.elements.backgroundNoiseAmount.value = effects.noiseAmount;
+  form.elements.backgroundNoiseScale.value = effects.noiseScale;
+  $('background-blur-value').textContent = effects.blur + 'px';
+  $('background-opacity-value').textContent = effects.opacity + '%';
+  $('background-noise-amount-value').textContent = effects.noiseAmount + '%';
+  $('background-noise-scale-value').textContent = Number(effects.noiseScale).toFixed(1) + 'x';
+  $('background-effects').classList.toggle('is-disabled', !effects.enabled);
+  for (const name of [
+    'backgroundBlur',
+    'backgroundOpacity',
+    'backgroundNoiseAmount',
+    'backgroundNoiseScale',
+  ])
+    form.elements[name].disabled = !effects.enabled;
+}
+function readAppearanceControls() {
+  const form = $('settings-form');
+  return {
+    enabled: form.elements.backgroundEnabled.checked,
+    blur: Number(form.elements.backgroundBlur.value),
+    opacity: Number(form.elements.backgroundOpacity.value),
+    noiseAmount: Number(form.elements.backgroundNoiseAmount.value),
+    noiseScale: Number(form.elements.backgroundNoiseScale.value),
+  };
+}
+function applyBackgroundEffects(value) {
+  const effects = backgroundValues(value);
+  document.documentElement.style.setProperty('--blur-amount', effects.blur + 'px');
+  document.documentElement.style.setProperty(
+    '--surface-opacity',
+    (effects.opacity / 100).toFixed(2),
+  );
+  document.documentElement.style.setProperty(
+    '--noise-opacity',
+    (effects.noiseAmount / 100).toFixed(3),
+  );
+  document.documentElement.style.setProperty(
+    '--noise-size',
+    Math.round(effects.noiseScale * 140) + 'px',
+  );
+  const reduced = window.matchMedia?.('(prefers-reduced-transparency: reduce)').matches;
+  document.body.dataset.material =
+    nativeBackdropSupported && effects.enabled && !reduced ? 'on' : 'off';
+  syncAppearanceControls(effects);
+}
+function updateThemePicker(theme) {
+  document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+    const selected = button.dataset.themeChoice === theme;
+    button.setAttribute('aria-pressed', String(selected));
+    button.setAttribute('aria-checked', String(selected));
+  });
+}
+function updateBackgroundSupport() {
+  $('background-support').textContent = t(
+    nativeBackdropSupported ? 'backgroundNative' : 'backgroundFallback',
+  );
+}
+function previewSettings() {
+  const form = $('settings-form');
+  document.body.dataset.theme = form.elements.theme.value;
+  updateThemePicker(form.elements.theme.value);
+  applyBackgroundEffects(readAppearanceControls());
 }
 function applySettings() {
   document.documentElement.lang = settings.language;
@@ -157,12 +317,16 @@ function applySettings() {
   document.body.dataset.theme = settings.theme;
   document.documentElement.style.setProperty('--accent', settings.accent);
   document.documentElement.style.setProperty('--font-size', settings.fontSize + 'px');
+  updateThemePicker(settings.theme);
+  applyBackgroundEffects(settings.backgroundEffects);
+  updateBackgroundSupport();
   document
     .querySelectorAll('[data-i18n]')
     .forEach((node) => (node.textContent = t(node.dataset.i18n)));
   $('pause-work').textContent = t(paused ? 'resume' : 'pause');
   $('reader-panel').hidden = !settings.readerVisible;
-  $('reader-toggle').classList.toggle('enabled', settings.readerVisible);
+  $('reader-toggle').textContent = t(settings.readerVisible ? 'hideReader' : 'reader');
+  $('reader-toggle').setAttribute('aria-pressed', String(settings.readerVisible));
   $('reader-direction').value = settings.readerDirection;
   $('shell-select').value = settings.defaultShell;
   for (const s of sessions.values()) {
@@ -180,19 +344,20 @@ function applySettings() {
 }
 function renderShortcuts() {
   $('shortcuts').replaceChildren();
-  settings.shortcuts.forEach((shortcut, index) => {
+  settings.shortcuts.forEach((shortcut) => {
     const button = document.createElement('button');
     button.className = 'shortcut';
-    const icon = document.createElement('span');
-    icon.className = 'shortcut-icon';
-    icon.textContent = ['✳', '✴', '✧', '⌘'][index % 4];
     const text = document.createElement('span');
+    text.className = 'shortcut-copy';
     const label = document.createElement('b');
     label.textContent = shortcut.label;
     const description = document.createElement('small');
     description.textContent = shortcut.description;
     text.append(label, description);
-    button.append(icon, text);
+    const command = document.createElement('code');
+    command.className = 'shortcut-command';
+    command.textContent = shortcut.command;
+    button.append(text, command);
     button.title = shortcut.command;
     button.onclick = () => {
       $('command').value = shortcut.command;
@@ -301,7 +466,8 @@ function renderSessions() {
     row.dataset.id = s.id;
     const open = document.createElement('button');
     open.className = 'session-open';
-    open.textContent = (s.exited ? '○  ' : '›_  ') + s.name;
+    row.classList.toggle('exited', s.exited);
+    open.textContent = s.name;
     open.onclick = () => activate(s.id);
     const close = document.createElement('button');
     close.className = 'session-close';
@@ -334,7 +500,7 @@ function updateActive() {
   $('cwd-label').title = $('cwd-label').textContent;
   $('connection-status').textContent = s
     ? s.exited
-      ? t('exited') + ' · ' + s.exitCode
+      ? t('exited') + ' / ' + s.exitCode
       : t('ready')
     : t('noSession');
   $('send-command').disabled = !s || s.exited;
@@ -439,7 +605,8 @@ async function pollStats() {
   try {
     lastStats = await api.stats();
     const b = lastStats.battery;
-    $('battery-value').textContent = b.percent === null ? '—' : b.percent + '%';
+    $('battery-metric').hidden = b.percent === null;
+    $('battery-value').textContent = b.percent === null ? '-' : b.percent + '%';
     $('battery-state').textContent =
       b.percent === null ? t('noBattery') : t(lastStats.onBattery ? 'discharging' : 'charging');
     const used = lastStats.memoryUsed / 1073741824,
@@ -467,11 +634,19 @@ function fillSettings(value) {
     form.elements[key].value = value[key];
   form.elements.showBanner.checked = value.showBanner;
   form.elements.shortcuts.value = JSON.stringify(value.shortcuts, null, 2);
+  form.elements.backgroundEnabled.checked = value.backgroundEffects.enabled;
+  form.elements.backgroundBlur.value = value.backgroundEffects.blur;
+  form.elements.backgroundOpacity.value = value.backgroundEffects.opacity;
+  form.elements.backgroundNoiseAmount.value = value.backgroundEffects.noiseAmount;
+  form.elements.backgroundNoiseScale.value = value.backgroundEffects.noiseScale;
+  updateThemePicker(value.theme);
+  syncAppearanceControls(value.backgroundEffects);
 }
 function openSettings() {
   fillSettings(settings);
   $('settings-error').textContent = '';
   $('settings-dialog').showModal();
+  previewSettings();
 }
 async function persist() {
   settings = await api.saveSettings(settings);
@@ -490,7 +665,7 @@ api.onExit(({ id, exitCode }) => {
     updateActive();
   }
 });
-$('new-session').onclick = $('add-terminal').onclick = () => safe(newSession());
+$('new-session').onclick = () => safe(newSession());
 $('workspace').onclick = () =>
   safe(
     (async () => {
@@ -505,6 +680,7 @@ $('workspace').onclick = () =>
 function updateFolder() {
   $('folder-name').textContent = cwd.split(/[\\/]/).filter(Boolean).pop() || cwd;
   $('workspace').title = cwd;
+  $('header-path').textContent = cwd;
 }
 $('language-button').onclick = () =>
   safe(
@@ -560,8 +736,34 @@ $('export').onclick = () =>
     })(),
   );
 $('settings-button').onclick = openSettings;
-$('close-settings').onclick = () => $('settings-dialog').close();
-$('reset-settings').onclick = () => fillSettings(defaultSettings);
+function closeSettings() {
+  $('settings-dialog').close();
+  applySettings();
+}
+$('close-settings').onclick = closeSettings;
+$('settings-dialog').addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeSettings();
+});
+$('reset-settings').onclick = () => {
+  fillSettings(defaultSettings);
+  previewSettings();
+};
+document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+  button.onclick = () => {
+    $('settings-form').elements.theme.value = button.dataset.themeChoice;
+    updateThemePicker(button.dataset.themeChoice);
+    previewSettings();
+  };
+});
+for (const id of [
+  'background-enabled',
+  'background-blur',
+  'background-opacity',
+  'background-noise-amount',
+  'background-noise-scale',
+])
+  $(id).oninput = previewSettings;
 $('settings-form').onsubmit = async (event) => {
   event.preventDefault();
   try {
@@ -571,6 +773,7 @@ $('settings-form').onsubmit = async (event) => {
       candidate[key] = form.elements[key].value;
     for (const key of ['fontSize', 'scrollback']) candidate[key] = Number(form.elements[key].value);
     candidate.showBanner = form.elements.showBanner.checked;
+    candidate.backgroundEffects = readAppearanceControls();
     candidate.shortcuts = JSON.parse(form.elements.shortcuts.value);
     settings = await api.saveSettings(candidate);
     applySettings();
@@ -626,6 +829,7 @@ safe(
     const info = await api.bootstrap();
     settings = info.settings;
     defaultSettings = info.defaults;
+    nativeBackdropSupported = Boolean(info.nativeBackdropSupported);
     cwd = info.cwd;
     $('version').textContent = info.version;
     updateFolder();

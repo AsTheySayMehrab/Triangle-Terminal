@@ -44,6 +44,7 @@ exports.run = async ({ app, window, resultDir }) => {
     await waitFor(
       "bufferLines(sessions.get(activeId),100).some(x=>x.trim()==='2YXbjOKAjNiq2YjYp9mG2YU=')",
     );
+    await js('settings.readerVisible=true; applySettings()');
     await waitFor("$('reader-output').textContent.includes('سلام دنیا')");
     const mockCode =
       "process.stdin.setRawMode(true);process.stdin.setEncoding('utf8');console.log('TRIANGLE_AGENT_READY');let text='';process.stdin.on('data',d=>{text+=d;if(text.includes('\\r')){console.log('AGENT_TEXT:'+Buffer.from(text.trim()).toString('base64'));process.exit(0);}})";
@@ -74,12 +75,20 @@ exports.run = async ({ app, window, resultDir }) => {
     assert.equal(await js("$('command').value"), 'codex');
     assert.equal(await js('sessions.get(activeId).exited'), false);
     await js(
-      "$('command').value=''; openSettings(); $('settings-form').elements.fontSize.value='18'; $('settings-form').requestSubmit()",
+      "$('command').value=''; openSettings(); $('settings-form').elements.fontSize.value='18'; $('settings-form').elements.backgroundBlur.value='26'; $('settings-form').elements.backgroundOpacity.value='72'; $('settings-form').elements.backgroundNoiseAmount.value='9'; $('settings-form').elements.backgroundNoiseScale.value='1.8'; $('settings-form').elements.theme.value='blueprint'; previewSettings()",
     );
-    await waitFor("!$('settings-dialog').open && settings.fontSize===18");
+    assert.equal(await js("$('settings-dialog').open"), true);
+    fs.writeFileSync(
+      path.join(resultDir, 'triangle-settings.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    await js("settings.readerVisible=false; $('settings-form').requestSubmit()");
+    await waitFor(
+      "!$('settings-dialog').open && settings.fontSize===18 && settings.theme==='blueprint' && settings.backgroundEffects.blur===26 && settings.backgroundEffects.opacity===72 && settings.backgroundEffects.noiseAmount===9 && settings.backgroundEffects.noiseScale===1.8",
+    );
     assert.equal(await js('triangle.bootstrap().then(value=>value.settings.fontSize)'), 18);
     await js(
-      "settings.fontSize=15; applySettings(); activate(sessions.keys().next().value); $('toast').hidden=true",
+      "settings.fontSize=15; settings.readerVisible=true; applySettings(); activate(sessions.keys().next().value); $('toast').hidden=true",
     );
     const demo =
       "Clear-Host; Write-Output 'Triangle Terminal / Ready to build.'; Write-Output 'سلام! به ترمینال مثلث خوش آمدید.'; Write-Output 'می‌توانم فارسی و English را کنار هم بنویسم.'; Write-Output 'UTF-8 | PowerShell | Codex-ready'";
@@ -127,6 +136,7 @@ exports.run = async ({ app, window, resultDir }) => {
             'ZWNJ insertion',
             'staged Codex shortcut',
             'settings persistence',
+            'theme preview and background material controls',
             'compact layout',
             'session cleanup',
             'renderer isolation',
@@ -136,6 +146,7 @@ exports.run = async ({ app, window, resultDir }) => {
             'triangle-english.png',
             'triangle-persian.png',
             'triangle-compact.png',
+            'triangle-settings.png',
           ],
         },
         null,

@@ -12,7 +12,14 @@ const defaults = {
   readerDirection: 'auto',
   showBanner: true,
   defaultShell: 'powershell',
-  readerVisible: true,
+  readerVisible: false,
+  backgroundEffects: {
+    enabled: true,
+    blur: 18,
+    opacity: 84,
+    noiseAmount: 5,
+    noiseScale: 1.2,
+  },
   shortcuts: [
     { label: 'Codex', command: 'codex', description: 'OpenAI coding agent' },
     { label: 'Claude Code', command: 'claude', description: 'Anthropic coding agent' },
@@ -23,10 +30,14 @@ const defaults = {
 function validateSettings(value = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('Settings must be an object');
-  const result = { ...defaults, shortcuts: defaults.shortcuts.map((x) => ({ ...x })) };
+  const result = {
+    ...defaults,
+    backgroundEffects: { ...defaults.backgroundEffects },
+    shortcuts: defaults.shortcuts.map((x) => ({ ...x })),
+  };
   const enums = {
     language: ['en', 'fa'],
-    theme: ['midnight', 'graphite', 'light'],
+    theme: ['midnight', 'graphite', 'blueprint', 'light'],
     cursorStyle: ['bar', 'block', 'underline'],
     readerDirection: ['auto', 'rtl', 'ltr'],
     defaultShell: ['powershell', 'cmd', 'pwsh'],
@@ -49,6 +60,23 @@ function validateSettings(value = {}) {
     result.fontFamily = value.fontFamily;
   for (const key of ['showBanner', 'readerVisible'])
     if (typeof value[key] === 'boolean') result[key] = value[key];
+  if (value.backgroundEffects && typeof value.backgroundEffects === 'object') {
+    const effects = value.backgroundEffects;
+    if (typeof effects.enabled === 'boolean') result.backgroundEffects.enabled = effects.enabled;
+    for (const [key, min, max] of [
+      ['blur', 0, 40],
+      ['opacity', 40, 96],
+      ['noiseAmount', 0, 18],
+    ]) {
+      if (Number.isFinite(effects[key]))
+        result.backgroundEffects[key] = Math.min(max, Math.max(min, Math.round(effects[key])));
+    }
+    if (Number.isFinite(effects.noiseScale))
+      result.backgroundEffects.noiseScale = Math.min(
+        2.5,
+        Math.max(0.5, Math.round(effects.noiseScale * 10) / 10),
+      );
+  }
   if (Array.isArray(value.shortcuts))
     result.shortcuts = value.shortcuts.slice(0, 16).map((x) => {
       if (
