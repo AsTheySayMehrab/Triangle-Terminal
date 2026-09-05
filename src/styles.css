@@ -3,6 +3,36 @@
   src: local('Tahoma');
   font-display: swap;
 }
+@font-face {
+  font-family: Kalameh;
+  src: local('Kalameh'), local('Kalameh Regular'), local('KalamehWeb'), local('KalamehWeb Regular');
+  font-display: swap;
+}
+.resizer {
+  flex-shrink: 0;
+  background: var(--line);
+  touch-action: none;
+  position: relative;
+  z-index: 2;
+}
+.resizer:hover,
+.resizer:focus-visible {
+  background: var(--accent);
+}
+.resizer.vertical {
+  width: 6px;
+  cursor: col-resize;
+}
+.resizer.horizontal {
+  height: 6px;
+  cursor: row-resize;
+}
+.resizer[hidden] {
+  display: none;
+}
+body.resizing {
+  user-select: none;
+}
 .terminal-pane.active {
   display: flex !important;
   flex-direction: column;
@@ -110,9 +140,10 @@ button.primary:hover {
   filter: brightness(1.08);
 }
 .sidebar {
-  width: 248px;
+  width: clamp(180px, var(--sidebar-width, 230px), 32vw);
   flex-shrink: 0;
-  padding: 29px 18px 16px;
+  padding: 20px 14px 12px;
+  overflow-y: auto;
   border-inline-end: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -303,13 +334,13 @@ main {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 27px 30px 0;
+  padding: 16px 18px 0;
 }
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 26px;
+  margin-bottom: 12px;
 }
 .eyebrow {
   font-size: 9px;
@@ -351,13 +382,13 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 22px;
+  margin-bottom: 10px;
 }
 .metrics article {
   border: 1px solid var(--line);
   background: var(--panel);
   border-radius: 10px;
-  padding: 16px 18px;
+  padding: 10px 12px;
   position: relative;
 }
 .metrics article > span {
@@ -368,10 +399,10 @@ h1 {
 .metrics strong {
   display: block;
   font:
-    25px Consolas,
+    20px Consolas,
     monospace;
   letter-spacing: -0.7px;
-  margin: 12px 0 7px;
+  margin: 6px 0;
   direction: ltr;
   text-align: start;
 }
@@ -398,6 +429,141 @@ h1 {
   height: 100%;
   width: 0;
 }
+.quota-strip {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.quota-heading > div:first-child,
+.quota-status,
+.quota-card small {
+  display: none;
+}
+.quota-strip .quota-heading {
+  margin: 0;
+}
+.quota-cards {
+  flex: 1;
+}
+.quota-strip .quota-card {
+  padding: 0;
+  background: transparent;
+}
+.quota-strip .quota-meter {
+  margin: 5px 0 0;
+}
+.quota-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.quota-heading h2 {
+  font-size: 15px;
+  font-weight: 550;
+  margin: 5px 0 0;
+}
+.quota-controls,
+.quota-cards {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quota-controls button {
+  font-size: 10px;
+  padding: 5px 8px;
+}
+.provider-badge {
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 10px;
+}
+.quota-cards {
+  align-items: stretch;
+}
+.quota-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+.quota-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.quota-card-top span {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1.2px;
+}
+.quota-card-top b {
+  color: var(--accent);
+  font:
+    13px Consolas,
+    monospace;
+  white-space: nowrap;
+}
+.quota-meter {
+  height: 4px;
+  background: var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 9px 0 7px;
+}
+.quota-meter i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+.quota-card small,
+.quota-status {
+  color: var(--muted);
+  font-size: 10px;
+}
+.quota-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quota-status {
+  margin: 9px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.quota-strip .quota-status,
+.quota-strip .quota-card small {
+  display: none;
+}
+.quota-strip .quota-cards {
+  min-width: 200px;
+}
+.quota-strip .quota-heading {
+  flex-shrink: 0;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--muted);
+}
 .terminal-card {
   flex: 1;
   min-height: 0;
@@ -416,6 +582,8 @@ h1 {
   padding: 11px 15px;
   border-bottom: 1px solid var(--line);
   gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 .toolbar-title {
   display: flex;
@@ -427,6 +595,9 @@ h1 {
 .toolbar-title b {
   font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
 }
 .toolbar-title > span {
   font-size: 10px;
@@ -435,6 +606,7 @@ h1 {
 .toolbar-actions {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
 }
 .toolbar-actions button,
 .toolbar-actions select {
@@ -444,6 +616,24 @@ h1 {
 .toolbar-actions button.enabled {
   color: var(--accent);
   border-color: var(--accent);
+}
+.toolbar-actions #open-usage,
+.toolbar-actions #clear-terminal {
+  color: var(--muted);
+}
+.path-picker {
+  display: flex;
+  gap: 7px;
+}
+.path-picker input {
+  min-width: 0;
+  flex: 1;
+}
+.path-picker button {
+  white-space: nowrap;
+}
+.session-form-grid {
+  margin-bottom: 3px;
 }
 .terminal-body {
   display: flex;
@@ -470,8 +660,9 @@ h1 {
   height: 100%;
 }
 #reader-panel {
-  width: 34%;
-  min-width: 240px;
+  width: clamp(160px, var(--reader-width, 34%), 55%);
+  min-width: 0;
+  flex-shrink: 0;
   border-left: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -519,6 +710,7 @@ h1 {
   border-top: 1px solid var(--line);
   padding: 11px 16px 12px;
   background: var(--panel);
+  flex-shrink: 0;
 }
 .composer-heading {
   display: flex;
@@ -540,8 +732,8 @@ h1 {
 }
 .composer textarea {
   width: 100%;
-  height: 62px;
-  max-height: 190px;
+  height: clamp(48px, var(--composer-height, 62px), 22vh);
+  max-height: 22vh;
   min-height: 48px;
   border: 0;
   background: var(--terminal);
@@ -551,18 +743,19 @@ h1 {
     Consolas,
     sans-serif;
   unicode-bidi: plaintext;
-  resize: vertical;
+  resize: none;
 }
 .composer-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-top: 8px;
   gap: 12px;
 }
 .composer-footer > span {
   font-size: 10px;
   color: var(--muted);
+  margin-inline-end: auto;
 }
 .composer-footer > div {
   display: flex;
@@ -725,6 +918,27 @@ body[data-theme='light'] {
 html[lang='fa'] body {
   font-family: Tahoma, 'Segoe UI', sans-serif;
 }
+body,
+html[lang='fa'] body {
+  font-family: var(--text-font, 'Kalameh'), Tahoma, 'Segoe UI', sans-serif;
+}
+#reader-output,
+.composer textarea {
+  font-family: var(--text-font, 'Kalameh'), Tahoma, 'Segoe UI', sans-serif;
+}
+.quota-strip .quota-status {
+  display: block;
+  flex-basis: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.quota-strip .quota-meter {
+  height: 9px;
+  border: 1px solid var(--muted);
+  padding: 1px;
+}
 html[lang='fa'] .eyebrow,
 html[lang='fa'] .sidebar-label,
 html[lang='fa'] .metrics article > span,
@@ -739,7 +953,7 @@ html[lang='fa'] .metrics strong {
 }
 @media (max-width: 1150px) {
   .sidebar {
-    width: 210px;
+    width: clamp(180px, var(--sidebar-width, 210px), 32vw);
     padding-inline: 12px;
   }
   main {
@@ -761,8 +975,7 @@ html[lang='fa'] .metrics strong {
     font-size: 21px;
   }
   #reader-panel {
-    width: 35%;
-    min-width: 220px;
+    width: clamp(150px, var(--reader-width, 35%), 55%);
   }
   .toolbar-title > span {
     display: none;
@@ -790,8 +1003,22 @@ html[lang='fa'] .metrics strong {
   .metrics strong {
     margin-block: 7px;
   }
-  .composer textarea {
-    height: 48px;
+  .metrics small,
+  .metrics .meter,
+  .eyebrow,
+  .version-pill,
+  .app-footer {
+    display: none;
+  }
+  .metrics strong {
+    font-size: 17px;
+  }
+  main {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .composer-footer > span {
+    display: none;
   }
   .app-footer {
     padding-block: 10px;

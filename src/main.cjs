@@ -5,6 +5,7 @@ const {
   dialog,
   powerMonitor,
   clipboard,
+  shell,
   session,
 } = require('electron');
 const fs = require('node:fs');
@@ -14,6 +15,9 @@ const { pathToFileURL } = require('node:url');
 const { execFile } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const pty = require('node-pty');
+const { readCodexUsage } = require('./usage.cjs');
+let usagePending;
+const fontFile = () => path.join(app.getPath('userData'), 'kalameh.font');
 const { validateSettings, shellProfile, dimensions, loadSettings } = require('./core.cjs');
 let window;
 const sessions = new Map();
@@ -125,6 +129,7 @@ app.whenReady().then(() => {
       cwd: startupDirectory(),
       platform: process.platform,
       version: app.getVersion(),
+      kalameh: fs.existsSync(fontFile()) ? fs.readFileSync(fontFile()).toString('base64') : null,
     };
   });
   handle('settings:save', (input) => {
@@ -137,6 +142,32 @@ app.whenReady().then(() => {
   handle('folder:choose', async () => {
     const result = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
     return result.canceled ? null : result.filePaths[0];
+  });
+  handle('font:import', async () => {
+    const result = await dialog.showOpenDialog(window, {
+      title: 'Choose your Kalameh font',
+      properties: ['openFile'],
+      filters: [{ name: 'Font', extensions: ['ttf', 'otf', 'woff', 'woff2'] }],
+    });
+    if (result.canceled) return null;
+    if (fs.statSync(result.filePaths[0]).size > 10485760)
+      throw new Error('Font file must be smaller than 10 MB.');
+    const bytes = fs.readFileSync(result.filePaths[0]);
+    const signature = bytes.subarray(0, 4).toString('hex');
+    if (!['00010000', '4f54544f', '774f4646', '774f4632'].includes(signature))
+      throw new Error('Choose a valid font file.');
+    fs.mkdirSync(app.getPath('userData'), { recursive: true });
+    fs.writeFileSync(fontFile(), bytes);
+    return bytes.toString('base64');
+  });
+  handle('usage:open', (provider) => {
+    const urls = {
+      codex: 'https://chatgpt.com/codex/settings/usage',
+      claude: 'https://console.anthropic.com/settings/usage',
+      gemini: 'https://aistudio.google.com/usage',
+    };
+    if (!Object.hasOwn(urls, provider)) throw new Error('Unknown agent provider');
+    return shell.openExternal(urls[provider]);
   });
   handle('session:create', (input) => {
     if (sessions.size >= 12) throw new Error('Maximum 12 terminal sessions');
@@ -254,6 +285,29 @@ app.whenReady().then(() => {
     cores: os.availableParallelism(),
     uptime: os.uptime(),
   }));
+  handle('usage:status', async (provider) => {
+    const names = { codex: 'Codex CLI', claude: 'Claude Code', gemini: 'Gemini CLI' };
+    if (!Object.hasOwn(names, provider)) throw new Error('Unknown agent provider');
+    if (provider === 'codex' && !smoke) {
+      if (!usagePending)
+        usagePending = Promise.resolve()
+          .then(() => readCodexUsage())
+          .finally(() => {
+            usagePending = null;
+          });
+      return usagePending;
+    }
+    return {
+      provider,
+      providerName: names[provider],
+      available: false,
+      fiveHour: null,
+      weekly: null,
+      message: smoke
+        ? 'Usage disabled during testing.'
+        : 'Live usage is not connected for this provider. View official usage.',
+    };
+  });
   handle('transcript:save', async (text) => {
     if (typeof text !== 'string' || text.length > 8388608)
       throw new Error('Transcript is too large');

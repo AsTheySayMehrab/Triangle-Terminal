@@ -7,11 +7,13 @@ const defaults = {
   accent: '#b5f36c',
   fontFamily: 'Cascadia Code, Consolas, monospace',
   fontSize: 15,
+  textFont: 'Kalameh',
   cursorStyle: 'bar',
   scrollback: 5000,
   readerDirection: 'auto',
   showBanner: true,
   defaultShell: 'powershell',
+  aiProvider: 'codex',
   readerVisible: true,
   shortcuts: [
     { label: 'Codex', command: 'codex', description: 'OpenAI coding agent' },
@@ -26,10 +28,12 @@ function validateSettings(value = {}) {
   const result = { ...defaults, shortcuts: defaults.shortcuts.map((x) => ({ ...x })) };
   const enums = {
     language: ['en', 'fa'],
+    textFont: ['Kalameh', 'Tahoma', 'Segoe UI', 'Arial'],
     theme: ['midnight', 'graphite', 'light'],
     cursorStyle: ['bar', 'block', 'underline'],
     readerDirection: ['auto', 'rtl', 'ltr'],
     defaultShell: ['powershell', 'cmd', 'pwsh'],
+    aiProvider: ['codex', 'claude', 'gemini'],
   };
   for (const [key, choices] of Object.entries(enums))
     if (choices.includes(value[key])) result[key] = value[key];

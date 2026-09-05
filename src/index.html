@@ -45,6 +45,14 @@
         </button>
       </div>
     </aside>
+    <div
+      id="sidebar-resizer"
+      class="resizer vertical"
+      role="separator"
+      tabindex="0"
+      aria-label="Resize sidebar"
+      aria-orientation="vertical"
+    ></div>
     <main>
       <header class="topbar">
         <div>
@@ -80,6 +88,38 @@
           <div class="meter"><i id="memory-meter"></i></div>
         </article>
       </section>
+      <section class="quota-strip" aria-label="AI provider limits">
+        <div class="quota-heading">
+          <div>
+            <span class="eyebrow">AGENT LIMITS</span>
+            <h2>Usage at a glance</h2>
+          </div>
+          <div class="quota-controls">
+            <span id="quota-provider" class="provider-badge">Codex CLI</span>
+            <button id="refresh-usage" title="Refresh account usage">↻</button>
+            <button id="open-usage" title="Open official provider usage page">
+              View official usage ↗
+            </button>
+          </div>
+        </div>
+        <div class="quota-cards">
+          <article class="quota-card">
+            <div class="quota-card-top">
+              <span>5-HOUR WINDOW</span><b id="five-hour-value">—</b>
+            </div>
+            <div class="quota-meter"><i id="five-hour-meter"></i></div>
+            <small id="five-hour-note">Provider usage is not available yet</small>
+          </article>
+          <article class="quota-card">
+            <div class="quota-card-top"><span>WEEKLY WINDOW</span><b id="weekly-value">—</b></div>
+            <div class="quota-meter"><i id="weekly-meter"></i></div>
+            <small id="weekly-note">Connect an agent CLI to show account limits</small>
+          </article>
+        </div>
+        <p id="quota-status" class="quota-status">
+          <i class="status-dot"></i> Limits are reported by the selected provider.
+        </p>
+      </section>
       <section class="terminal-card">
         <div class="terminal-toolbar">
           <div class="toolbar-title">
@@ -90,6 +130,7 @@
               <option value="powershell">PowerShell</option>
               <option value="cmd">CMD</option>
               <option value="pwsh">PowerShell 7</option></select
+            ><button id="clear-terminal" title="Clear terminal">Clear</button
             ><button id="add-terminal" title="New terminal">+</button
             ><button id="reader-toggle" data-i18n="reader">Persian reader</button
             ><button id="export" title="Export current terminal buffer" data-i18n="export">
@@ -99,6 +140,14 @@
         </div>
         <div class="terminal-body">
           <div id="terminals"></div>
+          <div
+            id="reader-resizer"
+            class="resizer vertical"
+            role="separator"
+            tabindex="0"
+            aria-label="Resize reader"
+            aria-orientation="vertical"
+          ></div>
           <aside id="reader-panel">
             <div class="reader-heading">
               <span data-i18n="readerTitle">BILINGUAL READER</span
@@ -114,6 +163,14 @@
             <div id="reader-output" aria-label="Bilingual terminal output"></div>
           </aside>
         </div>
+        <div
+          id="composer-resizer"
+          class="resizer horizontal"
+          role="separator"
+          tabindex="0"
+          aria-label="Resize command editor"
+          aria-orientation="horizontal"
+        ></div>
         <div class="composer">
           <div class="composer-heading">
             <label for="command" data-i18n="composer">BILINGUAL COMMAND & PROMPT EDITOR</label>
@@ -190,8 +247,31 @@
           /></label>
           <label class="wide"
             ><span data-i18n="fontFamily">Terminal font family</span
-            ><input name="fontFamily" maxlength="200" required
+            ><input name="fontFamily" list="terminal-fonts" maxlength="200" required
           /></label>
+          <datalist id="terminal-fonts">
+            <option value="Cascadia Code, Consolas, monospace"></option>
+            <option value="Consolas, monospace"></option>
+            <option value="Courier New, monospace"></option>
+            <option value="Kalameh, Consolas, monospace"></option>
+          </datalist>
+          <label
+            ><span>Interface &amp; Persian text font / قلم رابط و متن فارسی</span>
+            <select name="textFont">
+              <option>Kalameh</option>
+              <option>Tahoma</option>
+              <option>Segoe UI</option>
+              <option>Arial</option>
+            </select>
+          </label>
+          <label
+            ><span>Kalameh font file / فایل قلم کلمه</span
+            ><button type="button" id="import-font">Import font… / افزودن قلم</button></label
+          >
+          <p class="settings-note wide" id="font-status">
+            Kalameh uses your installed or imported font. Terminal grids work best with a monospace
+            font.
+          </p>
           <label
             ><span data-i18n="cursor">Cursor</span
             ><select name="cursorStyle">
@@ -212,6 +292,14 @@
               <option value="pwsh">PowerShell 7</option>
             </select></label
           >
+          <label
+            ><span>Agent provider</span
+            ><select name="aiProvider">
+              <option value="codex">Codex CLI</option>
+              <option value="claude">Claude Code</option>
+              <option value="gemini">Gemini CLI</option>
+            </select></label
+          >
           <label class="checkbox"
             ><input name="showBanner" type="checkbox" /><span data-i18n="banner"
               >Show startup ASCII art</span
@@ -230,6 +318,56 @@
         <div class="dialog-footer">
           <button type="button" id="reset-settings" data-i18n="reset">Reset defaults</button
           ><button class="primary" type="submit" data-i18n="save">Save preferences</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="session-dialog">
+      <form id="session-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">NEW INSTANCE</span>
+            <h2>Configure terminal</h2>
+          </div>
+          <button type="button" id="close-session-dialog" aria-label="Close">×</button>
+        </div>
+        <div class="settings-grid session-form-grid">
+          <label><span>Terminal name</span><input name="name" maxlength="50" required /></label>
+          <label
+            ><span>Shell</span
+            ><select name="shell">
+              <option value="powershell">PowerShell</option>
+              <option value="cmd">CMD</option>
+              <option value="pwsh">PowerShell 7</option>
+            </select></label
+          >
+          <label class="wide"
+            ><span>Working directory</span>
+            <div class="path-picker">
+              <input name="cwd" dir="ltr" required /><button
+                type="button"
+                id="choose-session-folder"
+              >
+                Browse…
+              </button>
+            </div></label
+          >
+          <label class="wide"
+            ><span>Agent command (optional)</span
+            ><input
+              name="agent"
+              dir="ltr"
+              placeholder="codex, claude, gemini, or any local command"
+              maxlength="200"
+          /></label>
+        </div>
+        <p class="settings-note">
+          Each instance keeps its own name, folder, shell, and agent. The agent command starts after
+          the shell opens.
+        </p>
+        <p id="session-error" role="alert"></p>
+        <div class="dialog-footer">
+          <button type="button" id="cancel-session">Cancel</button
+          ><button class="primary" type="submit">Open terminal</button>
         </div>
       </form>
     </dialog>
