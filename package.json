@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "electron": "44.2.0",
-    "prettier": "3.6.2"
+    "prettier": "3.9.6"
   },
   "build": {
     "appId": "dev.triangle.terminal",
