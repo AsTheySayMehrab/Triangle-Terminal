@@ -24,6 +24,7 @@ exports.run = async ({ app, window, resultDir }) => {
     await waitFor('sessions.size === 1');
     await waitFor("bufferLines(sessions.get(activeId),100).join('\\n').includes('PS ')");
     assert.equal(await js('typeof window.require'), 'undefined');
+    assert.match(await js('getComputedStyle(document.body).fontFamily'), /^Inter/);
     fs.writeFileSync(
       path.join(resultDir, 'triangle-startup.png'),
       (await window.webContents.capturePage()).toPNG(),
@@ -44,6 +45,7 @@ exports.run = async ({ app, window, resultDir }) => {
     await waitFor(
       "bufferLines(sessions.get(activeId),100).some(x=>x.trim()==='2YXbjOKAjNiq2YjYp9mG2YU=')",
     );
+    await js('settings.readerVisible=true; applySettings()');
     await waitFor("$('reader-output').textContent.includes('سلام دنیا')");
     const mockCode =
       "process.stdin.setRawMode(true);process.stdin.setEncoding('utf8');console.log('TRIANGLE_AGENT_READY');let text='';process.stdin.on('data',d=>{text+=d;if(text.includes('\\r')){console.log('AGENT_TEXT:'+Buffer.from(text.trim()).toString('base64'));process.exit(0);}})";
@@ -74,12 +76,53 @@ exports.run = async ({ app, window, resultDir }) => {
     assert.equal(await js("$('command').value"), 'codex');
     assert.equal(await js('sessions.get(activeId).exited'), false);
     await js(
-      "$('command').value=''; openSettings(); $('settings-form').elements.fontSize.value='18'; $('settings-form').requestSubmit()",
+      "$('command').value=''; openSettings(); $('settings-form').elements.fontSize.value='18'; $('settings-form').elements.backgroundBlur.value='26'; $('settings-form').elements.backgroundOpacity.value='72'; $('settings-form').elements.backgroundNoiseAmount.value='9'; $('settings-form').elements.backgroundNoiseScale.value='1.8'; $('settings-form').elements.theme.value='blueprint'; previewSettings()",
     );
-    await waitFor("!$('settings-dialog').open && settings.fontSize===18");
+    assert.equal(await js("$('settings-dialog').open"), true);
+    fs.writeFileSync(
+      path.join(resultDir, 'triangle-settings.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    assert.equal(await js("document.querySelectorAll('[data-theme-choice]').length"), 5);
+    assert.equal(
+      await js("getComputedStyle(document.body).getPropertyValue('--accent').trim()"),
+      '#72e7ef',
+    );
+    await js("$('settings-form').elements.theme.value='vercel'; previewSettings()");
+    assert.equal(await js('document.body.dataset.theme'), 'vercel');
+    assert.equal(
+      await js("getComputedStyle(document.body).getPropertyValue('--accent').trim()"),
+      '#ededed',
+    );
+    await js("$('settings-form').elements.theme.value='blueprint'; previewSettings()");
+    await js("settings.readerVisible=false; $('settings-form').requestSubmit()");
+    await waitFor(
+      "!$('settings-dialog').open && settings.fontSize===18 && settings.theme==='blueprint' && settings.accent==='#72e7ef' && settings.backgroundEffects.blur===26 && settings.backgroundEffects.opacity===72 && settings.backgroundEffects.noiseAmount===9 && settings.backgroundEffects.noiseScale===1.8",
+    );
     assert.equal(await js('triangle.bootstrap().then(value=>value.settings.fontSize)'), 18);
+    await js("settings.theme='vercel'; settings.accent='#ededed'; applySettings()");
+    await new Promise((r) => setTimeout(r, 200));
+    fs.writeFileSync(
+      path.join(resultDir, 'triangle-vercel.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    await js("settings.theme='blueprint'; settings.accent='#72e7ef'; applySettings()");
+    await js('setFocusMode(true)');
+    await new Promise((r) => setTimeout(r, 200));
+    fs.writeFileSync(
+      path.join(resultDir, 'triangle-focus.png'),
+      (await window.webContents.capturePage()).toPNG(),
+    );
+    assert.equal(
+      await js(
+        "document.body.dataset.focus==='true' && getComputedStyle(document.querySelector('.sidebar')).display==='none' && getComputedStyle(document.querySelector('.terminal-card')).borderRadius==='0px'",
+      ),
+      true,
+    );
+    await js('setFocusMode(false)');
+    assert.equal(await js('document.body.dataset.focus'), 'false');
     await js(
-      "settings.fontSize=15; applySettings(); activate(sessions.keys().next().value); $('toast').hidden=true",
+      "settings.fontSize=15; settings.readerVisible=true; applySettings(); activate(sessions.keys().next().value); $('toast').hidden=true",
     );
     const demo =
       "Clear-Host; Write-Output 'Triangle Terminal / Ready to build.'; Write-Output 'سلام! به ترمینال مثلث خوش آمدید.'; Write-Output 'می‌توانم فارسی و English را کنار هم بنویسم.'; Write-Output 'UTF-8 | PowerShell | Codex-ready'";
@@ -171,6 +214,8 @@ exports.run = async ({ app, window, resultDir }) => {
             'ZWNJ insertion',
             'staged Codex shortcut',
             'settings persistence',
+            'theme preview and background material controls',
+            'focus terminal mode',
             'compact layout',
             'session cleanup',
             'renderer isolation',
@@ -180,6 +225,9 @@ exports.run = async ({ app, window, resultDir }) => {
             'triangle-english.png',
             'triangle-persian.png',
             'triangle-compact.png',
+            'triangle-settings.png',
+            'triangle-vercel.png',
+            'triangle-focus.png',
           ],
         },
         null,

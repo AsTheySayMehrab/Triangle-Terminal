@@ -5,6 +5,7 @@ Dependencies retain their own copyright notices and licenses.
 
 | Component                         | License                                     | Source                                                |
 | --------------------------------- | ------------------------------------------- | ----------------------------------------------------- |
+| Inter via Fontsource              | SIL Open Font License 1.1                   | https://github.com/fontsource/font-files              |
 | Electron                          | MIT, with separate Chromium/Node.js notices | https://github.com/electron/electron                  |
 | xterm.js and fit addon            | MIT                                         | https://github.com/xtermjs/xterm.js                   |
 | node-pty                          | MIT, with bundled ConPTY notices            | https://github.com/microsoft/node-pty                 |

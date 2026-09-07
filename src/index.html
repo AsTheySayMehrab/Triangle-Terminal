@@ -5,322 +5,608 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>Triangle Terminal</title>
     <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/400.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/500.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/600.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/inter/700.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="brand-mark">△</span>
-        <div>
-          TRIANGLE<span>TERMINAL / <b id="version">0.1</b></span>
+  <body data-theme="midnight" data-material="on" data-focus="false">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand" aria-label="Triangle Terminal">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-copy">
+            <strong>TRIANGLE</strong>
+            <small>TERMINAL / <b id="version">0.1</b></small>
+          </span>
         </div>
-      </div>
-      <div class="sidebar-label" data-i18n="workspace">WORKSPACE</div>
-      <button id="workspace" class="workspace-card">
-        <span class="folder-icon">▱</span
-        ><span
-          ><b id="folder-name">Projects</b
-          ><small data-i18n="chooseFolder">Choose project folder</small></span
-        ><span>↗</span>
-      </button>
-      <div class="sidebar-label section-label">
-        <span data-i18n="sessions">SESSIONS</span
-        ><button id="new-session" class="icon-button" title="New terminal (Ctrl+Shift+T)">+</button>
-      </div>
-      <div id="session-list" class="session-list"></div>
-      <div class="sidebar-label section-label">
-        <span data-i18n="launchpad">AI & SHORTCUTS</span><span class="tiny-pill">CLI</span>
-      </div>
-      <div id="shortcuts" class="shortcuts"></div>
-      <div class="sidebar-bottom">
-        <div class="local-dot">
-          <i></i><span data-i18n="localFirst">Local terminal · your machine</span>
+
+        <div class="sidebar-heading">
+          <span class="section-label" data-i18n="workspace">Workspace</span>
         </div>
-        <button id="settings-button" class="settings-button">
-          <span>⚙</span><span data-i18n="settings">Customize workspace</span><kbd>Ctrl ,</kbd>
+        <button id="workspace" class="workspace-card" type="button">
+          <span class="folder-glyph" aria-hidden="true"></span>
+          <span class="workspace-copy">
+            <b id="folder-name">Projects</b>
+            <small data-i18n="chooseFolder">Choose project folder</small>
+          </span>
+          <span class="workspace-arrow" aria-hidden="true">↗</span>
         </button>
-      </div>
-    </aside>
-    <div
-      id="sidebar-resizer"
-      class="resizer vertical"
-      role="separator"
-      tabindex="0"
-      aria-label="Resize sidebar"
-      aria-orientation="vertical"
-    ></div>
-    <main>
-      <header class="topbar">
-        <div>
-          <span class="eyebrow" data-i18n="developerSpace">YOUR DEVELOPER SPACE</span>
-          <h1>Triangle Terminal<span class="version-pill">PREVIEW</span></h1>
+
+        <div class="section-head">
+          <span class="section-label" data-i18n="sessions">Sessions</span>
+          <button
+            id="new-session"
+            class="icon-button"
+            type="button"
+            title="New terminal (Ctrl+Shift+T)"
+            aria-label="New terminal"
+          >
+            <span aria-hidden="true">+</span>
+          </button>
         </div>
-        <div class="top-actions">
-          <button id="language-button">EN / فارسی</button
-          ><span class="clock" id="clock">00:00:00</span>
+        <div class="session-create">
+          <select id="shell-select" aria-label="Shell for new sessions">
+            <option value="powershell">PowerShell</option>
+            <option value="cmd">CMD</option>
+            <option value="pwsh">PowerShell 7</option>
+          </select>
+          <span class="create-hint" data-i18n="newSessionHint"
+            >Choose a shell, then start a session</span
+          >
         </div>
-      </header>
-      <section class="metrics">
-        <article>
-          <span data-i18n="sessionTime">SESSION TIME</span
-          ><strong id="session-time">00:00:00</strong
-          ><small data-i18n="sinceOpened">Since this workspace opened</small>
-        </article>
-        <article>
-          <span data-i18n="focusTime">WORKING TIME</span>
-          <div class="metric-row">
-            <strong id="work-time">00:00:00</strong
-            ><button id="pause-work" class="tiny-pill" data-i18n="pause">Pause</button>
-          </div>
-          <small id="work-state" data-i18n="idlePause">Pauses after 60 seconds idle</small>
-        </article>
-        <article>
-          <span data-i18n="battery">BATTERY</span><strong id="battery-value">—</strong
-          ><small id="battery-state" data-i18n="reading">Reading system status…</small>
-        </article>
-        <article>
-          <span data-i18n="memory">SYSTEM MEMORY</span><strong id="memory-value">—</strong
-          ><small id="memory-state">—</small>
-          <div class="meter"><i id="memory-meter"></i></div>
-        </article>
-      </section>
-      <section class="quota-strip" aria-label="AI provider limits">
-        <div class="quota-heading">
-          <div>
-            <span class="eyebrow">AGENT LIMITS</span>
-            <h2>Usage at a glance</h2>
-          </div>
-          <div class="quota-controls">
-            <span id="quota-provider" class="provider-badge">Codex CLI</span>
-            <button id="refresh-usage" title="Refresh account usage">↻</button>
-            <button id="open-usage" title="Open official provider usage page">
-              View official usage ↗
-            </button>
-          </div>
+        <div id="session-list" class="session-list"></div>
+
+        <div class="section-head shortcuts-heading">
+          <span class="section-label" data-i18n="launchpad">Shortcuts</span>
         </div>
-        <div class="quota-cards">
-          <article class="quota-card">
-            <div class="quota-card-top">
-              <span>5-HOUR WINDOW</span><b id="five-hour-value">—</b>
+        <div id="shortcuts" class="shortcuts"></div>
+
+        <div class="sidebar-bottom">
+          <div class="local-status">
+            <i class="live-dot"></i>
+            <span data-i18n="localFirst">Local terminal. This machine</span>
+          </div>
+          <button id="settings-button" class="settings-button" type="button">
+            <span class="settings-glyph" aria-hidden="true">⌘</span>
+            <span data-i18n="settings">Customize workspace</span>
+            <kbd>Ctrl ,</kbd>
+          </button>
+        </div>
+      </aside>
+
+      <div
+        id="sidebar-resizer"
+        class="resizer vertical"
+        role="separator"
+        tabindex="0"
+        aria-label="Resize sidebar"
+        aria-orientation="vertical"
+      ></div>
+
+      <main>
+        <header class="topbar">
+          <div class="topbar-copy">
+            <span class="eyebrow" data-i18n="developerSpace">Developer space</span>
+            <div class="title-line">
+              <h1 data-i18n="terminalWorkspace">Terminal workspace</h1>
+              <span class="version-pill" data-i18n="preview">Preview</span>
             </div>
-            <div class="quota-meter"><i id="five-hour-meter"></i></div>
-            <small id="five-hour-note">Provider usage is not available yet</small>
-          </article>
-          <article class="quota-card">
-            <div class="quota-card-top"><span>WEEKLY WINDOW</span><b id="weekly-value">—</b></div>
-            <div class="quota-meter"><i id="weekly-meter"></i></div>
-            <small id="weekly-note">Connect an agent CLI to show account limits</small>
-          </article>
-        </div>
-        <p id="quota-status" class="quota-status">
-          <i class="status-dot"></i> Limits are reported by the selected provider.
-        </p>
-      </section>
-      <section class="terminal-card">
-        <div class="terminal-toolbar">
-          <div class="toolbar-title">
-            <i class="live-dot"></i><b id="active-title">PowerShell</b><span id="process-id"></span>
+            <p id="header-path" class="header-path" dir="auto"></p>
           </div>
-          <div class="toolbar-actions">
-            <select id="shell-select" aria-label="Shell for new sessions">
-              <option value="powershell">PowerShell</option>
-              <option value="cmd">CMD</option>
-              <option value="pwsh">PowerShell 7</option></select
-            ><button id="clear-terminal" title="Clear terminal">Clear</button
-            ><button id="add-terminal" title="New terminal">+</button
-            ><button id="reader-toggle" data-i18n="reader">Persian reader</button
-            ><button id="export" title="Export current terminal buffer" data-i18n="export">
-              Export
-            </button>
-          </div>
-        </div>
-        <div class="terminal-body">
-          <div id="terminals"></div>
-          <div
-            id="reader-resizer"
-            class="resizer vertical"
-            role="separator"
-            tabindex="0"
-            aria-label="Resize reader"
-            aria-orientation="vertical"
-          ></div>
-          <aside id="reader-panel">
-            <div class="reader-heading">
-              <span data-i18n="readerTitle">BILINGUAL READER</span
-              ><select id="reader-direction" aria-label="Reader direction">
-                <option value="auto">Auto</option>
-                <option value="rtl">RTL</option>
-                <option value="ltr">LTR</option>
-              </select>
-            </div>
-            <p class="reader-hint" data-i18n="readerHint">
-              Live, selectable text with Persian shaping. Use the terminal for interactive apps.
-            </p>
-            <div id="reader-output" aria-label="Bilingual terminal output"></div>
-          </aside>
-        </div>
-        <div
-          id="composer-resizer"
-          class="resizer horizontal"
-          role="separator"
-          tabindex="0"
-          aria-label="Resize command editor"
-          aria-orientation="horizontal"
-        ></div>
-        <div class="composer">
-          <div class="composer-heading">
-            <label for="command" data-i18n="composer">BILINGUAL COMMAND & PROMPT EDITOR</label>
-            <div>
-              <button id="zwnj" title="Insert Persian half-space (ZWNJ)">نیم‌فاصله</button
-              ><select id="input-direction" aria-label="Input direction">
-                <option value="auto">Auto ↔</option>
-                <option value="rtl">فارسی ←</option>
-                <option value="ltr">English →</option>
-              </select>
-            </div>
-          </div>
-          <textarea
-            id="command"
-            dir="auto"
-            spellcheck="false"
-            rows="2"
-            placeholder="Write a command or AI prompt… / دستور یا پیام خود را بنویسید"
-          ></textarea>
-          <div class="composer-footer">
-            <span data-i18n="composerHint"
-              >Ctrl+Enter to send · text keeps its original Unicode order</span
+          <div class="top-actions">
+            <button
+              id="focus-mode"
+              class="focus-toggle"
+              type="button"
+              data-i18n="focusMode"
+              title="Focus terminal (Ctrl+Shift+M)"
+              aria-pressed="false"
             >
+              Focus terminal
+            </button>
+            <button id="language-button" type="button">EN / فارسی</button>
+            <span class="clock" id="clock">00:00:00</span>
+          </div>
+        </header>
+
+        <section id="metrics" class="metrics" aria-label="Workspace metrics">
+          <article>
+            <span data-i18n="sessionTime">Session time</span>
+            <strong id="session-time">00:00:00</strong>
+            <small data-i18n="sinceOpened">Since this workspace opened</small>
+          </article>
+          <article>
+            <span data-i18n="focusTime">Working time</span>
+            <div class="metric-row">
+              <strong id="work-time">00:00:00</strong>
+              <button id="pause-work" class="tiny-button" type="button" data-i18n="pause">
+                Pause
+              </button>
+            </div>
+            <small id="work-state" data-i18n="idlePause">Pauses after 60 seconds idle</small>
+          </article>
+          <article id="battery-metric">
+            <span data-i18n="battery">Battery</span>
+            <strong id="battery-value">-</strong>
+            <small id="battery-state" data-i18n="reading">Reading system status.</small>
+          </article>
+          <article>
+            <span data-i18n="memory">System memory</span>
+            <strong id="memory-value">-</strong>
+            <small id="memory-state">-</small>
+            <div class="meter" aria-hidden="true"><i id="memory-meter"></i></div>
+          </article>
+        </section>
+
+        <section class="quota-strip" aria-label="AI provider limits">
+          <div class="quota-heading">
             <div>
-              <button id="copy-command" data-i18n="copy">Copy</button
-              ><button id="send-command" class="primary" data-i18n="send">
-                Send to terminal ↵
+              <span class="eyebrow">AGENT LIMITS</span>
+              <h2>Usage at a glance</h2>
+            </div>
+            <div class="quota-controls">
+              <span id="quota-provider" class="provider-badge">Codex CLI</span>
+              <button id="refresh-usage" type="button" title="Refresh account usage">↻</button>
+              <button id="open-usage" type="button" title="Open official provider usage page">
+                View official usage ↗
               </button>
             </div>
           </div>
-        </div>
-        <footer class="terminal-status">
-          <span><i class="live-dot"></i><span id="connection-status">Ready</span></span
-          ><span id="cwd-label" dir="auto"></span
-          ><span>UTF-8 <span class="status-divider">/</span> FA + EN</span>
+          <div class="quota-cards">
+            <article class="quota-card">
+              <div class="quota-card-top">
+                <span>5-HOUR WINDOW</span><b id="five-hour-value">—</b>
+              </div>
+              <div class="quota-meter"><i id="five-hour-meter"></i></div>
+              <small id="five-hour-note">Provider usage is not available yet</small>
+            </article>
+            <article class="quota-card">
+              <div class="quota-card-top"><span>WEEKLY WINDOW</span><b id="weekly-value">—</b></div>
+              <div class="quota-meter"><i id="weekly-meter"></i></div>
+              <small id="weekly-note">Connect an agent CLI to show account limits</small>
+            </article>
+          </div>
+          <p id="quota-status" class="quota-status">
+            <i class="status-dot"></i> Limits are reported by the selected provider.
+          </p>
+        </section>
+
+        <section class="terminal-card" aria-label="Terminal workspace">
+          <div class="terminal-toolbar">
+            <div class="toolbar-title">
+              <i class="live-dot"></i>
+              <b id="active-title">PowerShell</b>
+              <span id="process-id" class="process-id"></span>
+            </div>
+            <div class="toolbar-actions">
+              <button id="add-terminal" class="secondary-button" type="button" title="New terminal">
+                +
+              </button>
+              <button
+                id="clear-terminal"
+                class="secondary-button"
+                type="button"
+                title="Clear terminal"
+              >
+                Clear
+              </button>
+              <button id="reader-toggle" class="secondary-button" type="button" data-i18n="reader">
+                Show reader
+              </button>
+              <button
+                id="export"
+                class="secondary-button"
+                type="button"
+                title="Export current terminal buffer"
+                data-i18n="export"
+              >
+                Export
+              </button>
+              <button
+                id="focus-exit"
+                class="secondary-button focus-exit"
+                type="button"
+                data-i18n="exitFocus"
+                hidden
+              >
+                Exit focus
+              </button>
+            </div>
+          </div>
+
+          <div class="terminal-body">
+            <div id="terminals"></div>
+            <div
+              id="reader-resizer"
+              class="resizer vertical"
+              role="separator"
+              tabindex="0"
+              aria-label="Resize reader"
+              aria-orientation="vertical"
+            ></div>
+            <aside id="reader-panel" hidden>
+              <div class="reader-heading">
+                <span class="section-label" data-i18n="readerTitle">Bilingual reader</span>
+                <select id="reader-direction" aria-label="Reader direction">
+                  <option value="auto">Auto</option>
+                  <option value="rtl">RTL</option>
+                  <option value="ltr">LTR</option>
+                </select>
+              </div>
+              <p class="reader-hint" data-i18n="readerHint">
+                Live, selectable text with Persian shaping. Use the terminal for interactive apps.
+              </p>
+              <div
+                id="reader-output"
+                aria-label="Bilingual terminal output"
+                aria-live="polite"
+              ></div>
+            </aside>
+          </div>
+
+          <div
+            id="composer-resizer"
+            class="resizer horizontal"
+            role="separator"
+            tabindex="0"
+            aria-label="Resize command editor"
+            aria-orientation="horizontal"
+          ></div>
+
+          <div class="composer">
+            <div class="composer-heading">
+              <label for="command" data-i18n="composer">Command composer</label>
+              <div class="composer-tools">
+                <button
+                  id="zwnj"
+                  class="secondary-button"
+                  type="button"
+                  title="Insert Persian half-space (ZWNJ)"
+                  data-i18n="zwnj"
+                >
+                  ZWNJ
+                </button>
+                <select id="input-direction" aria-label="Input direction">
+                  <option value="auto">Auto ↔</option>
+                  <option value="rtl">فارسی ←</option>
+                  <option value="ltr">English →</option>
+                </select>
+              </div>
+            </div>
+            <textarea
+              id="command"
+              dir="auto"
+              spellcheck="false"
+              rows="2"
+              placeholder="Write a command or AI prompt... / دستور یا پیام خود را بنویسید"
+            ></textarea>
+            <div class="composer-footer">
+              <span data-i18n="composerHint"
+                >Ctrl+Enter to send. Text keeps its original Unicode order.</span
+              >
+              <div>
+                <button id="copy-command" class="secondary-button" type="button" data-i18n="copy">
+                  Copy
+                </button>
+                <button id="send-command" class="primary" type="button" data-i18n="send">
+                  Send to terminal ↵
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <footer class="terminal-status">
+            <span><i class="live-dot"></i><span id="connection-status">Ready</span></span>
+            <span id="cwd-label" dir="auto"></span>
+            <span>UTF-8 <span class="status-divider">/</span> FA + EN</span>
+          </footer>
+        </section>
+
+        <footer class="app-footer">
+          <span data-i18n="footer">Local sessions. Clear output. No cloud terminal.</span>
+          <span data-i18n="quota">Provider status is reported by your local CLI.</span>
         </footer>
-      </section>
-      <footer class="app-footer">
-        <span data-i18n="footer">A little more clarity. A lot more possibility.</span
-        ><span data-i18n="quota">AI balance: unavailable · check your provider CLI</span>
-      </footer>
-    </main>
+      </main>
+    </div>
+
     <dialog id="settings-dialog">
       <form id="settings-form">
         <div class="dialog-heading">
           <div>
-            <span class="eyebrow">MAKE IT YOURS</span>
+            <span class="eyebrow" data-i18n="preferences">Preferences</span>
             <h2 data-i18n="settings">Customize workspace</h2>
+            <p class="dialog-intro" data-i18n="settingsIntro">
+              Tune the material, language, and terminal details.
+            </p>
           </div>
-          <button type="button" id="close-settings" aria-label="Close">×</button>
+          <button type="button" id="close-settings" class="dialog-close" aria-label="Close">
+            ×
+          </button>
         </div>
-        <div class="settings-grid">
-          <label
-            ><span data-i18n="language">Language</span
-            ><select name="language">
-              <option value="en">English</option>
-              <option value="fa">فارسی</option>
-            </select></label
-          >
-          <label
-            ><span data-i18n="theme">Theme</span
-            ><select name="theme">
-              <option value="midnight">Midnight garden</option>
-              <option value="graphite">Graphite violet</option>
-              <option value="light">Paper</option>
-            </select></label
-          >
-          <label
-            ><span data-i18n="accent">Accent color</span><input name="accent" type="color"
-          /></label>
-          <label
-            ><span data-i18n="fontSize">Font size</span
-            ><input name="fontSize" type="number" min="11" max="30" required
-          /></label>
-          <label class="wide"
-            ><span data-i18n="fontFamily">Terminal font family</span
-            ><input name="fontFamily" list="terminal-fonts" maxlength="200" required
-          /></label>
-          <datalist id="terminal-fonts">
-            <option value="Cascadia Code, Consolas, monospace"></option>
-            <option value="Consolas, monospace"></option>
-            <option value="Courier New, monospace"></option>
-            <option value="Kalameh, Consolas, monospace"></option>
-          </datalist>
-          <label
-            ><span>Interface &amp; Persian text font / قلم رابط و متن فارسی</span>
-            <select name="textFont">
-              <option>Kalameh</option>
-              <option>Tahoma</option>
-              <option>Segoe UI</option>
-              <option>Arial</option>
-            </select>
+
+        <section class="settings-section">
+          <div class="settings-section-heading">
+            <div>
+              <h3 data-i18n="theme">Theme</h3>
+              <p data-i18n="themeIntro">Choose a focused workspace surface.</p>
+            </div>
+            <span class="live-preview" data-i18n="livePreview">Live preview</span>
+          </div>
+          <div class="theme-picker" role="radiogroup" aria-label="Theme">
+            <button
+              class="theme-option"
+              type="button"
+              data-theme-choice="midnight"
+              role="radio"
+              aria-pressed="false"
+            >
+              <span class="theme-swatch theme-swatch-midnight" aria-hidden="true"
+                ><i></i><b></b><em></em
+              ></span>
+              <span
+                ><strong data-i18n="themeMidnight">Midnight</strong
+                ><small data-i18n="themeMidnightNote">Deep green, soft lime</small></span
+              >
+            </button>
+            <button
+              class="theme-option"
+              type="button"
+              data-theme-choice="graphite"
+              role="radio"
+              aria-pressed="false"
+            >
+              <span class="theme-swatch theme-swatch-graphite" aria-hidden="true"
+                ><i></i><b></b><em></em
+              ></span>
+              <span
+                ><strong data-i18n="themeGraphite">Graphite</strong
+                ><small data-i18n="themeGraphiteNote">Neutral dark, violet accent</small></span
+              >
+            </button>
+            <button
+              class="theme-option"
+              type="button"
+              data-theme-choice="blueprint"
+              role="radio"
+              aria-pressed="false"
+            >
+              <span class="theme-swatch theme-swatch-blueprint" aria-hidden="true"
+                ><i></i><b></b><em></em
+              ></span>
+              <span
+                ><strong data-i18n="themeBlueprint">Blueprint</strong
+                ><small data-i18n="themeBlueprintNote">Ink blue, signal cyan</small></span
+              >
+            </button>
+            <button
+              class="theme-option"
+              type="button"
+              data-theme-choice="light"
+              role="radio"
+              aria-pressed="false"
+            >
+              <span class="theme-swatch theme-swatch-light" aria-hidden="true"
+                ><i></i><b></b><em></em
+              ></span>
+              <span
+                ><strong data-i18n="themeLight">Paper</strong
+                ><small data-i18n="themeLightNote">Warm light, high contrast</small></span
+              >
+            </button>
+            <button
+              class="theme-option"
+              type="button"
+              data-theme-choice="vercel"
+              role="radio"
+              aria-pressed="false"
+            >
+              <span class="theme-swatch theme-swatch-vercel" aria-hidden="true"
+                ><i></i><b></b><em></em
+              ></span>
+              <span
+                ><strong data-i18n="themeVercel">Vercel</strong
+                ><small data-i18n="themeVercelNote">Black, white, no distraction</small></span
+              >
+            </button>
+          </div>
+          <input id="theme-input" name="theme" type="hidden" value="midnight" />
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-heading">
+            <div>
+              <h3 data-i18n="background">Background material</h3>
+              <p id="background-support" data-i18n="backgroundNote">
+                Native Acrylic on supported Windows. Solid fallback elsewhere.
+              </p>
+            </div>
+          </div>
+          <label class="switch-row">
+            <input id="background-enabled" name="backgroundEnabled" type="checkbox" />
+            <span class="switch-control" aria-hidden="true"></span>
+            <span
+              ><strong data-i18n="backgroundEnabled">Use frosted background</strong
+              ><small data-i18n="backgroundEnabledNote"
+                >Keep the app readable while letting the desktop material show through.</small
+              ></span
+            >
           </label>
-          <label
-            ><span>Kalameh font file / فایل قلم کلمه</span
-            ><button type="button" id="import-font">Import font… / افزودن قلم</button></label
-          >
-          <p class="settings-note wide" id="font-status">
-            Kalameh uses your installed or imported font. Terminal grids work best with a monospace
-            font.
+          <div id="background-effects" class="range-grid">
+            <label class="range-setting">
+              <span
+                ><strong data-i18n="blurAmount">Blur amount</strong
+                ><output id="background-blur-value" for="background-blur">18px</output></span
+              >
+              <input
+                id="background-blur"
+                name="backgroundBlur"
+                type="range"
+                min="0"
+                max="40"
+                step="1"
+                value="18"
+              />
+            </label>
+            <label class="range-setting">
+              <span
+                ><strong data-i18n="opacity">Opacity</strong
+                ><output id="background-opacity-value" for="background-opacity">84%</output></span
+              >
+              <input
+                id="background-opacity"
+                name="backgroundOpacity"
+                type="range"
+                min="40"
+                max="96"
+                step="1"
+                value="84"
+              />
+            </label>
+            <label class="range-setting">
+              <span
+                ><strong data-i18n="noiseAmount">Noise amount</strong
+                ><output id="background-noise-amount-value" for="background-noise-amount"
+                  >5%</output
+                ></span
+              >
+              <input
+                id="background-noise-amount"
+                name="backgroundNoiseAmount"
+                type="range"
+                min="0"
+                max="18"
+                step="1"
+                value="5"
+              />
+            </label>
+            <label class="range-setting">
+              <span
+                ><strong data-i18n="noiseScale">Noise scale</strong
+                ><output id="background-noise-scale-value" for="background-noise-scale"
+                  >1.2x</output
+                ></span
+              >
+              <input
+                id="background-noise-scale"
+                name="backgroundNoiseScale"
+                type="range"
+                min="0.5"
+                max="2.5"
+                step="0.1"
+                value="1.2"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-heading">
+            <div>
+              <h3 data-i18n="workspaceSettings">Workspace details</h3>
+              <p data-i18n="workspaceSettingsIntro">The controls that affect terminal behavior.</p>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <label
+              ><span data-i18n="language">Language</span
+              ><select name="language">
+                <option value="en">English</option>
+                <option value="fa">فارسی</option>
+              </select></label
+            >
+            <label
+              ><span data-i18n="accent">Accent color</span><input name="accent" type="color"
+            /></label>
+            <label
+              ><span data-i18n="fontSize">Font size</span
+              ><input name="fontSize" type="number" min="11" max="30" required
+            /></label>
+            <label
+              ><span data-i18n="cursor">Cursor</span
+              ><select name="cursorStyle">
+                <option value="bar">Bar</option>
+                <option value="block">Block</option>
+                <option value="underline">Underline</option>
+              </select></label
+            >
+            <label class="wide"
+              ><span data-i18n="fontFamily">Terminal font family</span
+              ><input name="fontFamily" list="terminal-fonts" maxlength="200" required
+            /></label>
+            <datalist id="terminal-fonts">
+              <option value="Cascadia Code, Consolas, monospace"></option>
+              <option value="Consolas, monospace"></option>
+              <option value="Courier New, monospace"></option>
+              <option value="Kalameh, Consolas, monospace"></option>
+            </datalist>
+            <label
+              ><span>Interface &amp; Persian text font / قلم رابط و متن فارسی</span>
+              <select name="textFont">
+                <option value="Inter">Inter</option>
+                <option value="Kalameh">Kalameh</option>
+                <option value="Tahoma">Tahoma</option>
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Arial">Arial</option>
+              </select></label
+            >
+            <label
+              ><span>Kalameh font file / فایل قلم کلمه</span
+              ><button type="button" id="import-font">Import font… / افزودن قلم</button></label
+            >
+            <p class="settings-note wide" id="font-status">
+              Kalameh uses your installed or imported font. Terminal grids work best with a
+              monospace font.
+            </p>
+            <label
+              ><span data-i18n="scrollback">Scrollback lines</span
+              ><input name="scrollback" type="number" min="100" max="20000" required
+            /></label>
+            <label
+              ><span data-i18n="defaultShell">Default shell</span
+              ><select name="defaultShell">
+                <option value="powershell">PowerShell</option>
+                <option value="cmd">CMD</option>
+                <option value="pwsh">PowerShell 7</option>
+              </select></label
+            >
+            <label
+              ><span>Agent provider</span
+              ><select name="aiProvider">
+                <option value="codex">Codex CLI</option>
+                <option value="claude">Claude Code</option>
+                <option value="gemini">Gemini CLI</option>
+              </select></label
+            >
+            <label class="checkbox"
+              ><input name="showBanner" type="checkbox" /><span data-i18n="banner"
+                >Show startup ASCII art</span
+              ></label
+            >
+            <label class="wide"
+              ><span data-i18n="shortcutJson">Shortcuts (JSON: label, command, description)</span
+              ><textarea name="shortcuts" rows="5" dir="ltr" spellcheck="false"></textarea>
+            </label>
+          </div>
+          <p class="settings-note" data-i18n="shortcutNote">
+            Shortcuts stage a command in the editor. Review it, then send. Tools must be installed
+            separately.
           </p>
-          <label
-            ><span data-i18n="cursor">Cursor</span
-            ><select name="cursorStyle">
-              <option value="bar">Bar</option>
-              <option value="block">Block</option>
-              <option value="underline">Underline</option>
-            </select></label
-          >
-          <label
-            ><span data-i18n="scrollback">Scrollback lines</span
-            ><input name="scrollback" type="number" min="100" max="20000" required
-          /></label>
-          <label
-            ><span data-i18n="defaultShell">Default shell</span
-            ><select name="defaultShell">
-              <option value="powershell">PowerShell</option>
-              <option value="cmd">CMD</option>
-              <option value="pwsh">PowerShell 7</option>
-            </select></label
-          >
-          <label
-            ><span>Agent provider</span
-            ><select name="aiProvider">
-              <option value="codex">Codex CLI</option>
-              <option value="claude">Claude Code</option>
-              <option value="gemini">Gemini CLI</option>
-            </select></label
-          >
-          <label class="checkbox"
-            ><input name="showBanner" type="checkbox" /><span data-i18n="banner"
-              >Show startup ASCII art</span
-            ></label
-          >
-          <label class="wide"
-            ><span data-i18n="shortcutJson">Shortcuts (JSON: label, command, description)</span
-            ><textarea name="shortcuts" rows="7" dir="ltr" spellcheck="false"></textarea>
-          </label>
-        </div>
-        <p class="settings-note" data-i18n="shortcutNote">
-          Shortcuts stage a command in the editor. Review it, then send. AI tools must be installed
-          separately.
-        </p>
+        </section>
+
         <p id="settings-error" role="alert"></p>
         <div class="dialog-footer">
-          <button type="button" id="reset-settings" data-i18n="reset">Reset defaults</button
-          ><button class="primary" type="submit" data-i18n="save">Save preferences</button>
+          <button type="button" id="reset-settings" data-i18n="reset">Reset defaults</button>
+          <button class="primary" type="submit" data-i18n="save">Save preferences</button>
         </div>
       </form>
     </dialog>
+
     <dialog id="session-dialog">
       <form id="session-form">
         <div class="dialog-heading">
@@ -328,7 +614,9 @@
             <span class="eyebrow">NEW INSTANCE</span>
             <h2>Configure terminal</h2>
           </div>
-          <button type="button" id="close-session-dialog" aria-label="Close">×</button>
+          <button type="button" id="close-session-dialog" class="dialog-close" aria-label="Close">
+            ×
+          </button>
         </div>
         <div class="settings-grid session-form-grid">
           <label><span>Terminal name</span><input name="name" maxlength="50" required /></label>
@@ -366,19 +654,23 @@
         </p>
         <p id="session-error" role="alert"></p>
         <div class="dialog-footer">
-          <button type="button" id="cancel-session">Cancel</button
-          ><button class="primary" type="submit">Open terminal</button>
+          <button type="button" id="cancel-session">Cancel</button>
+          <button class="primary" type="submit">Open terminal</button>
         </div>
       </form>
     </dialog>
+
     <dialog id="close-dialog">
       <h2 data-i18n="closeTitle">Close this terminal?</h2>
       <p data-i18n="closeWarning">The shell and its running programs will be stopped.</p>
       <div class="dialog-footer">
-        <button id="cancel-close" data-i18n="cancel">Cancel</button
-        ><button id="confirm-close" class="primary" data-i18n="close">Close terminal</button>
+        <button id="cancel-close" type="button" data-i18n="cancel">Cancel</button>
+        <button id="confirm-close" class="primary" type="button" data-i18n="close">
+          Close terminal
+        </button>
       </div>
     </dialog>
+
     <div id="toast" role="status" hidden></div>
     <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
     <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>

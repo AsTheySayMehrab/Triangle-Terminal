@@ -1,6 +1,6 @@
 # Triangle Terminal △
 
-A Windows desktop terminal for Persian and English developers. Real PowerShell and CMD sessions, an AI CLI launchpad, a bilingual editor and reader, and a customizable dashboard.
+A Windows desktop terminal for Persian and English developers. Real PowerShell and CMD sessions, a bilingual editor and reader, local CLI shortcuts, and a focused terminal workspace.
 
 **Windows x64 · 0.1.0 preview · MIT**
 
@@ -33,7 +33,9 @@ To make `triangle` available from other directories, optionally run `npm link` y
 ## Included
 
 - Independent PowerShell, CMD, and optional PowerShell 7 tabs, real PTYs, terminal resizing, colors, interactive programs, shell history, Ctrl+C, and native shell commands.
-- Triangle ASCII startup artwork, three themes, accent color, terminal font, font size, cursor, scrollback, default shell, and editable command shortcuts.
+- Triangle ASCII startup artwork, five themes, theme-matched accent colors, Inter UI typography, terminal font, font size, cursor, scrollback, default shell, and editable command shortcuts.
+- Optional Windows Acrylic background material with saved blur amount, opacity, noise amount, and noise scale controls. Unsupported systems use a solid, readable fallback.
+- Focus mode hides the workspace chrome and leaves the active terminal with a compact exit control.
 - English/Persian interface, automatic or explicit editor direction, native browser Persian shaping, half-space (ZWNJ) insertion, and Unicode clipboard support.
 - Live bilingual reader with connected Persian letters and bidirectional text layout. It follows the active terminal's most recent 600 physical buffer lines and joins wrapped lines.
 - Project directory picker, per-tab editor drafts, transcript export, and confirmation before stopping sessions.
@@ -58,6 +60,10 @@ Battery charge comes from Windows. **AI credit balance, remaining subscription a
 
 Work time counts while Triangle is focused and the system has been active within 60 seconds. It is not command execution duration. Timers restart when the application restarts. The displayed project path is the session's starting directory; the shell prompt shows later directory changes.
 
+## Background material and themes
+
+Open **Customize workspace** to preview Midnight, Graphite, Blueprint, Vercel, or Paper before saving. Each theme carries its own accent color. The background controls tune Blur amount, Opacity, Noise amount, and Noise scale independently across the layered workspace surfaces. The frosted option uses Electron's native Acrylic material on supported Windows builds; the renderer keeps an opaque fallback for older systems and reduced-transparency preferences. Focus mode is available in the top bar or with **Ctrl+Shift+M**. See Electron's [window material options](https://www.electronjs.org/docs/latest/api/structures/base-window-options) and [title bar overlay guidance](https://www.electronjs.org/docs/latest/tutorial/custom-title-bar).
+
 ## Keyboard shortcuts
 
 | Shortcut           | Action                                     |
@@ -65,6 +71,7 @@ Work time counts while Triangle is focused and the system has been active within
 | Ctrl+Shift+T       | New terminal with the selected shell       |
 | Ctrl+Shift+W       | Close active terminal with confirmation    |
 | Ctrl+Shift+F       | Focus bilingual editor                     |
+| Ctrl+Shift+M       | Toggle terminal focus mode                 |
 | Ctrl+Enter         | Send editor text to active terminal        |
 | Ctrl+Shift+C       | Copy terminal selection                    |
 | Ctrl+Shift+V       | Paste into the bilingual editor for review |

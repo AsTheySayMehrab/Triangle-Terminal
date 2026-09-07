@@ -19,6 +19,31 @@ test('untrusted settings are bounded and unsupported values fall back', () => {
   assert.equal(result.accent, '#b5f36c');
   assert.equal(result.extra, undefined);
 });
+test('background material settings are bounded and theme choices are preserved', () => {
+  const result = validateSettings({
+    theme: 'blueprint',
+    backgroundEffects: {
+      enabled: false,
+      blur: 999,
+      opacity: 1,
+      noiseAmount: -4,
+      noiseScale: 9,
+    },
+  });
+  assert.equal(result.theme, 'blueprint');
+  assert.equal(validateSettings({ theme: 'vercel' }).theme, 'vercel');
+  assert.deepEqual(result.backgroundEffects, {
+    enabled: false,
+    blur: 40,
+    opacity: 40,
+    noiseAmount: 0,
+    noiseScale: 2.5,
+  });
+  assert.equal(
+    validateSettings({ backgroundEffects: { enabled: 'yes' } }).backgroundEffects.enabled,
+    true,
+  );
+});
 test('Persian prompts, mixed commands and half-spaces survive settings roundtrip', () => {
   const command = 'Write-Output "سلام دنیا — می‌توانم English 123"';
   const value = { language: 'fa', shortcuts: [{ label: 'فارسی', command, description: 'آزمایش' }] };
