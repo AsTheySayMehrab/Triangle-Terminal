@@ -38,7 +38,7 @@
     "node-pty": "^1.1.0"
   },
   "devDependencies": {
-    "electron": "44.2.0",
+    "electron": "44.3.0",
     "prettier": "3.9.6"
   },
   "build": {
