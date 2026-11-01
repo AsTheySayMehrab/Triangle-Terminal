@@ -4,6 +4,6 @@
   "private": true,
   "description": "Separately installed, locked Windows release tooling",
   "devDependencies": {
-    "electron-builder": "26.15.3"
+    "electron-builder": "26.18.0"
   }
 }
